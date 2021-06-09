@@ -117,6 +117,7 @@ void mlisp_error_set (int code, char *message, size_t messagelen){
   }
   else {
     copy(message, messagelen, mlisp_error.message);
+    mlisp_error.message[messagelen] = '\0';
   }
 }
 
@@ -148,7 +149,8 @@ mlisp_number *mlisp_allocate_number (mlisp_machine *machine){
 static size_t calculate_hash (char *characters, size_t length){
   size_t hash = 0;
   for (size_t index = 0; index < length; index++){
-    hash += characters[index];
+    size_t trueindex = index % sizeof(hash);
+    ((uint8_t*)&hash)[trueindex] ^= characters[index];
   }
   return hash;
 }
@@ -304,6 +306,8 @@ static int eval_args (mlisp_cons *args, mlisp_machine *machine, mlisp_cons **arg
     if (mlisp_eval(cons->car, machine, &evaluated) != 0){ return 1; }
     mlisp_cons *cn = mlisp_allocate_cons(evaluated, argsevaluated, machine);
     if (cn == NULL){ return 1; }
+    if (mlisp_decrease(evaluated, machine) != 0){ return 1; }
+    if (mlisp_decrease(argsevaluated, machine) != 0){ return 1; } 
     argsevaluated = cn;
   }
   *argsevaluatedp = list_nreverse(argsevaluated);
@@ -361,6 +365,8 @@ mlisp_cons *mlisp_quote (void *value, mlisp_machine *machine){
   if (quote == NULL){ return NULL; }
   mlisp_cons *cons1 = mlisp_allocate_cons(quote, cons2, machine);
   if (cons1 == NULL){ return NULL; }
+  if (mlisp_decrease(cons2, machine) != 0){ return NULL; }
+  if (mlisp_decrease(quote, machine) != 0){ return NULL; }
   return cons1;
 }
 
@@ -1175,11 +1181,15 @@ static int mlisp_read_token (FILE *file, mlisp_machine *machine, void **valuep){
 }
 
 static int mlisp_read_quote (FILE *file, mlisp_machine *machine, void **valuep){
+  if (getc(file) != '\''){
+    mlisp_error_set0(MLISP_SYNTAX_ERROR, "first character must be '\''.");
+    return 1; 
+  }
   void *value;
   if (mlisp_read(file, machine, &value) != 0){ return 1; }
-  if (mlisp_increase(value, machine) != 0){ return 1; }
   mlisp_cons *quoted = mlisp_quote(value, machine);
   if (quoted == NULL){ return 1; }
+  if (mlisp_decrease(value, machine) != 0){ return 1; } 
   *valuep = quoted;
   return 0;
 }
@@ -1196,6 +1206,8 @@ static int mlisp_read_list (FILE *file, mlisp_machine *machine, void **valuep){
     if (status == MLISP_READ_SUCCESS){
       mlisp_cons *cons = mlisp_allocate_cons(value, list, machine);
       if (cons == NULL){ return 1; }
+      if (mlisp_decrease(value, machine) != 0){ return 1; } 
+      if (mlisp_decrease(list, machine) != 0){ return 1; } 
       list = cons;
     }
     else 
@@ -1282,6 +1294,8 @@ static int mlisp_read_string (FILE *file, mlisp_machine *machine, void **valuep)
       *number = unescaped;
       mlisp_cons *cons = mlisp_allocate_cons(number, list, machine);
       if (cons == NULL){ return 1; }
+      if (mlisp_decrease(number, machine) != 0){ return 1; } 
+      if (mlisp_decrease(list, machine) != 0){ return 1; } 
       list = cons;
     }
     else {
@@ -1290,6 +1304,8 @@ static int mlisp_read_string (FILE *file, mlisp_machine *machine, void **valuep)
       *number = character;
       mlisp_cons *cons = mlisp_allocate_cons(number, list, machine);
       if (cons == NULL){ return 1; }
+      if (mlisp_decrease(number, machine) != 0){ return 1; } 
+      if (mlisp_decrease(list, machine) != 0){ return 1; } 
       list = cons;
     }
   }
@@ -1333,6 +1349,7 @@ int mlisp_read (FILE *file, mlisp_machine *machine, void **valuep){
     }
     else 
     if (character == '\''){
+      ungetc(character, file);
       return mlisp_read_quote(file, machine, valuep);
     }
     else 
@@ -1620,6 +1637,8 @@ static int __mlisp_symbol_name (mlisp_cons *args, mlisp_machine *machine, void *
     *number = ((mlisp_symbol*)symbol)->characters[index];
     mlisp_cons *cons = mlisp_allocate_cons(number, list, machine);
     if (cons == NULL){ return 1; }
+    if (mlisp_decrease(number, machine) != 0){ return 1; } 
+    if (mlisp_decrease(list, machine) != 0){ return 1; } 
     list = cons;
   }
   *valuep = list_nreverse(list);
@@ -1652,6 +1671,7 @@ static int __mlisp_list (mlisp_cons *args, mlisp_machine *machine, void **valuep
   for (mlisp_cons *cons = args; cons != NULL; cons = cons->cdr){
     mlisp_cons *cn = mlisp_allocate_cons(cons->car, list, machine);
     if (cn == NULL){ return 1; }
+    if (mlisp_decrease(list, machine) != 0){ return 1; } 
     list = cn;
   }
   *valuep = list_nreverse(list);
@@ -1675,15 +1695,6 @@ static int __mlisp_cdr (mlisp_cons *args, mlisp_machine *machine, void **valuep)
   mlisp_cons_reference *reference = mlisp_cons_get_reference(MLISP_CONS_CDR, cons, machine);
   if (reference == NULL){ return 1; }
   *valuep = reference;
-  return 0;
-}
-
-static int __mlisp_eq (mlisp_cons *args, mlisp_machine *machine, void **valuep){
-  void *value1;
-  void *value2;
-  if (list_nth(0, args, &value1) != 0){ return 1; }
-  if (list_nth(1, args, &value2) != 0){ return 1; }
-  *valuep = value1 == value2? MLISP_T: NULL;
   return 0;
 }
 
@@ -1776,6 +1787,162 @@ static int __mlisp_mod (mlisp_cons *args, mlisp_machine *machine, void **valuep)
   }
 }
 
+static int __mlisp_lshift (mlisp_cons *args, mlisp_machine *machine, void **valuep){
+  void *value1;
+  void *value2;
+  if (list_nth(0, args, &value1) != 0){ return 1; }
+  if (list_nth(1, args, &value2) != 0){ return 1; }
+  if (!mlisp_typep(MLISP_NUMBER, value1, machine)){ return 1; }
+  if (!mlisp_typep(MLISP_NUMBER, value2, machine)){ return 1; }
+  double integerpart1;
+  double decimalpart1 = modf(*(mlisp_number*)value1, &integerpart1);
+  double integerpart2;
+  double decimalpart2 = modf(*(mlisp_number*)value2, &integerpart2);
+  if (abs(decimalpart1) <= 0.0 && abs(decimalpart2) <= 0.0){
+    mlisp_number *number = mlisp_allocate_number(machine);
+    if (number == NULL){ return 1; }
+    *number = (intmax_t)integerpart1 << (intmax_t)integerpart2;
+    *valuep = number;
+    return 0;
+  }
+  else {
+    return 1; 
+  }
+}
+
+static int __mlisp_rshift (mlisp_cons *args, mlisp_machine *machine, void **valuep){
+  void *value1;
+  void *value2;
+  if (list_nth(0, args, &value1) != 0){ return 1; }
+  if (list_nth(1, args, &value2) != 0){ return 1; }
+  if (!mlisp_typep(MLISP_NUMBER, value1, machine)){ return 1; }
+  if (!mlisp_typep(MLISP_NUMBER, value2, machine)){ return 1; }
+  double integerpart1;
+  double decimalpart1 = modf(*(mlisp_number*)value1, &integerpart1);
+  double integerpart2;
+  double decimalpart2 = modf(*(mlisp_number*)value2, &integerpart2);
+  if (abs(decimalpart1) <= 0.0 && abs(decimalpart2) <= 0.0){
+    mlisp_number *number = mlisp_allocate_number(machine);
+    if (number == NULL){ return 1; }
+    *number = (intmax_t)integerpart1 >> (intmax_t)integerpart2;
+    *valuep = number;
+    return 0;
+  }
+  else {
+    return 1; 
+  }
+}
+
+static int __mlisp_log_rshift (mlisp_cons *args, mlisp_machine *machine, void **valuep){
+  void *value1;
+  void *value2;
+  if (list_nth(0, args, &value1) != 0){ return 1; }
+  if (list_nth(1, args, &value2) != 0){ return 1; }
+  if (!mlisp_typep(MLISP_NUMBER, value1, machine)){ return 1; }
+  if (!mlisp_typep(MLISP_NUMBER, value2, machine)){ return 1; }
+  double integerpart1;
+  double decimalpart1 = modf(*(mlisp_number*)value1, &integerpart1);
+  double integerpart2;
+  double decimalpart2 = modf(*(mlisp_number*)value2, &integerpart2);
+  if (abs(decimalpart1) <= 0.0 && abs(decimalpart2) <= 0.0){
+    mlisp_number *number = mlisp_allocate_number(machine);
+    if (number == NULL){ return 1; }
+    *number = (uintmax_t)integerpart1 >> (intmax_t)integerpart2;
+    *valuep = number;
+    return 0;
+  }
+  else {
+    return 1; 
+  }
+}
+
+static int __mlisp_log_not (mlisp_cons *args, mlisp_machine *machine, void **valuep){
+  void *value;
+  if (list_nth(0, args, &value) != 0){ return 1; }
+  if (!mlisp_typep(MLISP_NUMBER, value, machine)){ return 1; }
+  double integerpart;
+  double decimalpart = modf(*(mlisp_number*)value, &integerpart);
+  if (abs(decimalpart) <= 0.0){
+    mlisp_number *number = mlisp_allocate_number(machine);
+    if (number == NULL){ return 1; }
+    *number = ~(intmax_t)integerpart;
+    *valuep = number;
+    return 0;
+  }
+  else {
+    return 1; 
+  }
+}
+
+static int __mlisp_log_and (mlisp_cons *args, mlisp_machine *machine, void **valuep){
+  void *value1;
+  void *value2;
+  if (list_nth(0, args, &value1) != 0){ return 1; }
+  if (list_nth(1, args, &value2) != 0){ return 1; }
+  if (!mlisp_typep(MLISP_NUMBER, value1, machine)){ return 1; }
+  if (!mlisp_typep(MLISP_NUMBER, value2, machine)){ return 1; }
+  double integerpart1;
+  double decimalpart1 = modf(*(mlisp_number*)value1, &integerpart1);
+  double integerpart2;
+  double decimalpart2 = modf(*(mlisp_number*)value2, &integerpart2);
+  if (abs(decimalpart1) <= 0.0 && abs(decimalpart2) <= 0.0){
+    mlisp_number *number = mlisp_allocate_number(machine);
+    if (number == NULL){ return 1; }
+    *number = (intmax_t)integerpart1 & (intmax_t)integerpart2;
+    *valuep = number;
+    return 0;
+  }
+  else {
+    return 1; 
+  }
+}
+
+static int __mlisp_log_or (mlisp_cons *args, mlisp_machine *machine, void **valuep){
+  void *value1;
+  void *value2;
+  if (list_nth(0, args, &value1) != 0){ return 1; }
+  if (list_nth(1, args, &value2) != 0){ return 1; }
+  if (!mlisp_typep(MLISP_NUMBER, value1, machine)){ return 1; }
+  if (!mlisp_typep(MLISP_NUMBER, value2, machine)){ return 1; }
+  double integerpart1;
+  double decimalpart1 = modf(*(mlisp_number*)value1, &integerpart1);
+  double integerpart2;
+  double decimalpart2 = modf(*(mlisp_number*)value2, &integerpart2);
+  if (abs(decimalpart1) <= 0.0 && abs(decimalpart2) <= 0.0){
+    mlisp_number *number = mlisp_allocate_number(machine);
+    if (number == NULL){ return 1; }
+    *number = (intmax_t)integerpart1 | (intmax_t)integerpart2;
+    *valuep = number;
+    return 0;
+  }
+  else {
+    return 1; 
+  }
+}
+
+static int __mlisp_log_xor (mlisp_cons *args, mlisp_machine *machine, void **valuep){
+  void *value1;
+  void *value2;
+  if (list_nth(0, args, &value1) != 0){ return 1; }
+  if (list_nth(1, args, &value2) != 0){ return 1; }
+  if (!mlisp_typep(MLISP_NUMBER, value1, machine)){ return 1; }
+  if (!mlisp_typep(MLISP_NUMBER, value2, machine)){ return 1; }
+  double integerpart1;
+  double decimalpart1 = modf(*(mlisp_number*)value1, &integerpart1);
+  double integerpart2;
+  double decimalpart2 = modf(*(mlisp_number*)value2, &integerpart2);
+  if (abs(decimalpart1) <= 0.0 && abs(decimalpart2) <= 0.0){
+    mlisp_number *number = mlisp_allocate_number(machine);
+    if (number == NULL){ return 1; }
+    *number = (intmax_t)integerpart1 ^ (intmax_t)integerpart2;
+    *valuep = number;
+    return 0;
+  }
+  else {
+    return 1; 
+  }
+}
+
 static int __mlisp_floor (mlisp_cons *args, mlisp_machine *machine, void **valuep){
   void *number;
   if (list_nth(0, args, &number) != 0){ return 1; }
@@ -1809,12 +1976,30 @@ static int __mlisp_round (mlisp_cons *args, mlisp_machine *machine, void **value
   return 0;
 }
 
+static bool equal (void*, void*, mlisp_machine*);
+
+static bool equal_cons (mlisp_cons *cons1, mlisp_cons *cons2, mlisp_machine *machine){
+  return equal(cons1->car, cons2->car, machine) && equal(cons1->cdr, cons2->cdr, machine);
+}
+
+static bool equal (void *value1, void *value2, mlisp_machine *machine){
+  if (mlisp_typep(MLISP_NUMBER, value1, machine) && mlisp_typep(MLISP_NUMBER, value2, machine)){
+    return *(mlisp_number*)value1 == *(mlisp_number*)value2;
+  }
+  else 
+  if (mlisp_typep(MLISP_CONS, value1, machine) && mlisp_typep(MLISP_CONS, value2, machine)){
+    return equal_cons(value1, value2, machine);
+  }
+  else {
+    return value1 == value2;
+  }
+}
+
 static int __mlisp_equal (mlisp_cons *args, mlisp_machine *machine, void **valuep){
   if (args != NULL){
-    if (!mlisp_typep(MLISP_NUMBER, args->car, machine)){ return 1; }
+    void *first = args->car;
     for (mlisp_cons *cons = args->cdr; cons != NULL; cons = cons->cdr){
-      if (!mlisp_typep(MLISP_NUMBER, cons->car, machine)){ return 1; }
-      if (!(*(mlisp_number*)(args->car) == *(mlisp_number*)(cons->car))){
+      if (!equal(first, cons->car, machine)){
         *valuep = MLISP_NIL;
         return 0;
       }
@@ -1825,6 +2010,13 @@ static int __mlisp_equal (mlisp_cons *args, mlisp_machine *machine, void **value
   else {
     return 1; 
   }
+}
+
+static int __mlisp_unequal (mlisp_cons *args, mlisp_machine *machine, void **valuep){
+  void *value;
+  if (__mlisp_equal(args, machine, &value) != 0){ return 1; }
+  *valuep = value != MLISP_NIL? MLISP_NIL: MLISP_T;
+  return 0;
 }
 
 static int __mlisp_less (mlisp_cons *args, mlisp_machine *machine, void **valuep){
@@ -1899,6 +2091,41 @@ static int __mlisp_great_or_equal (mlisp_cons *args, mlisp_machine *machine, voi
   }
 }
 
+static int __mlisp_numberp (mlisp_cons *args, mlisp_machine *machine, void **valuep){
+  void *value;
+  if (list_nth(0, args, &value) != 0){ return 1; }
+  *valuep = mlisp_typep(MLISP_NUMBER, value, machine)? MLISP_T: MLISP_NIL;
+  return 0;
+}
+
+static int __mlisp_symbolp (mlisp_cons *args, mlisp_machine *machine, void **valuep){
+  void *value;
+  if (list_nth(0, args, &value) != 0){ return 1; }
+  *valuep = mlisp_typep(MLISP_SYMBOL, value, machine)? MLISP_T: MLISP_NIL;
+  return 0;
+}
+
+static int __mlisp_functionp (mlisp_cons *args, mlisp_machine *machine, void **valuep){
+  void *value;
+  if (list_nth(0, args, &value) != 0){ return 1; }
+  *valuep = mlisp_functionp(value, machine)? MLISP_T: MLISP_NIL;
+  return 0;
+}
+
+static int __mlisp_consp (mlisp_cons *args, mlisp_machine *machine, void **valuep){
+  void *value;
+  if (list_nth(0, args, &value) != 0){ return 1; }
+  *valuep = mlisp_typep(MLISP_CONS, value, machine)? MLISP_T: MLISP_NIL;
+  return 0;
+}
+
+static int __mlisp_listp (mlisp_cons *args, mlisp_machine *machine, void **valuep){
+  void *value;
+  if (list_nth(0, args, &value) != 0){ return 1; }
+  *valuep = listp(value, machine)? MLISP_T: MLISP_NIL;
+  return 0;
+}
+
 static int __mlisp_read (mlisp_cons *args, mlisp_machine *machine, void **valuep){
   void *value;
   if (mlisp_read(stdin, machine, &value) != 0){ return 1; }
@@ -1926,6 +2153,8 @@ static int __mlisp_read_string (mlisp_cons *args, mlisp_machine *machine, void *
       *number = character;
       mlisp_cons *cons = mlisp_allocate_cons(number, list, machine);
       if (cons == NULL){ return 1; }
+      if (mlisp_decrease(number, machine) != 0){ return 1; } 
+      if (mlisp_decrease(list, machine) != 0){ return 1; } 
       list = cons;
     }
     else {
@@ -1956,6 +2185,8 @@ static int __mlisp_read_line (mlisp_cons *args, mlisp_machine *machine, void **v
       *number = character;
       mlisp_cons *cons = mlisp_allocate_cons(number, list, machine);
       if (cons == NULL){ return 1; }
+      if (mlisp_decrease(number, machine) != 0){ return 1; } 
+      if (mlisp_decrease(list, machine) != 0){ return 1; } 
       list = cons;
       if (character == '\n'){
         break;
@@ -2029,6 +2260,24 @@ static int __mlisp_writeln (mlisp_cons *args, mlisp_machine *machine, void **val
   if (__mlisp_write(args, machine, valuep) != 0){ return 1; }
   putchar('\n');
   return 0;
+}
+
+static int __mlisp_error (mlisp_cons *args, mlisp_machine *machine, void **valuep){
+  void *errorcode;
+  void *errormessage;
+  if (list_nth(0, args, &errorcode) != 0){ return 1; }
+  if (list_nth(1, args, &errormessage) != 0){ return 1; }
+  if (!mlisp_typep(MLISP_NUMBER, errorcode, machine)){ return 1; }
+  if (!listp(errormessage, machine)){ return 1; }
+  char buffer[MLISP_ERROR_INFO_MAX_LENGTH];
+  size_t index;
+  mlisp_cons *cons;
+  for (index = 0, cons = errormessage; index < MLISP_ERROR_INFO_MAX_LENGTH && cons != NULL; index++, cons = cons->cdr){
+    if (!mlisp_typep(MLISP_NUMBER, cons->car, machine)){ return 1; }
+    buffer[index] = *(mlisp_number*)(cons->car);
+  }
+  mlisp_error_set(*(mlisp_number*)errorcode, buffer, index);
+  return 1;
 }
 
 // setup syntax 
@@ -2200,16 +2449,6 @@ static int setup_builtin_function (mlisp_machine *machine){
     if (mlisp_decrease(symbol, machine) != 0){ return 1; }
     if (mlisp_decrease(function, machine) != 0){ return 1; }
   }
-  // define eq
-  {
-    mlisp_symbol *symbol = mlisp_allocate_symbol0("eq", machine);
-    if (symbol == NULL){ return 1; }
-    mlisp_c_function *function = mlisp_allocate_c_function(MLISP_FUNCTION, __mlisp_eq, machine);
-    if (function == NULL){ return 1; }
-    if (mlisp_scope_set(function, symbol, machine) != 0){ return 1; }
-    if (mlisp_decrease(symbol, machine) != 0){ return 1; }
-    if (mlisp_decrease(function, machine) != 0){ return 1; }
-  }
   // define + 
   {
     mlisp_symbol *symbol = mlisp_allocate_symbol0("+", machine);
@@ -2260,6 +2499,76 @@ static int setup_builtin_function (mlisp_machine *machine){
     if (mlisp_decrease(symbol, machine) != 0){ return 1; }
     if (mlisp_decrease(function, machine) != 0){ return 1; }
   }
+  // define <<
+  {
+    mlisp_symbol *symbol = mlisp_allocate_symbol0("<<", machine);
+    if (symbol == NULL){ return 1; }
+    mlisp_c_function *function = mlisp_allocate_c_function(MLISP_FUNCTION, __mlisp_lshift, machine);
+    if (function == NULL){ return 1; }
+    if (mlisp_scope_set(function, symbol, machine) != 0){ return 1; }
+    if (mlisp_decrease(symbol, machine) != 0){ return 1; }
+    if (mlisp_decrease(function, machine) != 0){ return 1; }
+  }
+  // define >>
+  {
+    mlisp_symbol *symbol = mlisp_allocate_symbol0(">>", machine);
+    if (symbol == NULL){ return 1; }
+    mlisp_c_function *function = mlisp_allocate_c_function(MLISP_FUNCTION, __mlisp_rshift, machine);
+    if (function == NULL){ return 1; }
+    if (mlisp_scope_set(function, symbol, machine) != 0){ return 1; }
+    if (mlisp_decrease(symbol, machine) != 0){ return 1; }
+    if (mlisp_decrease(function, machine) != 0){ return 1; }
+  }
+  // define >>>
+  {
+    mlisp_symbol *symbol = mlisp_allocate_symbol0(">>>", machine);
+    if (symbol == NULL){ return 1; }
+    mlisp_c_function *function = mlisp_allocate_c_function(MLISP_FUNCTION, __mlisp_log_rshift, machine);
+    if (function == NULL){ return 1; }
+    if (mlisp_scope_set(function, symbol, machine) != 0){ return 1; }
+    if (mlisp_decrease(symbol, machine) != 0){ return 1; }
+    if (mlisp_decrease(function, machine) != 0){ return 1; }
+  }
+  // define ~
+  {
+    mlisp_symbol *symbol = mlisp_allocate_symbol0("~", machine);
+    if (symbol == NULL){ return 1; }
+    mlisp_c_function *function = mlisp_allocate_c_function(MLISP_FUNCTION, __mlisp_log_not, machine);
+    if (function == NULL){ return 1; }
+    if (mlisp_scope_set(function, symbol, machine) != 0){ return 1; }
+    if (mlisp_decrease(symbol, machine) != 0){ return 1; }
+    if (mlisp_decrease(function, machine) != 0){ return 1; }
+  }
+  // define &
+  {
+    mlisp_symbol *symbol = mlisp_allocate_symbol0("&", machine);
+    if (symbol == NULL){ return 1; }
+    mlisp_c_function *function = mlisp_allocate_c_function(MLISP_FUNCTION, __mlisp_log_and, machine);
+    if (function == NULL){ return 1; }
+    if (mlisp_scope_set(function, symbol, machine) != 0){ return 1; }
+    if (mlisp_decrease(symbol, machine) != 0){ return 1; }
+    if (mlisp_decrease(function, machine) != 0){ return 1; }
+  }
+  // define |
+  {
+    mlisp_symbol *symbol = mlisp_allocate_symbol0("|", machine);
+    if (symbol == NULL){ return 1; }
+    mlisp_c_function *function = mlisp_allocate_c_function(MLISP_FUNCTION, __mlisp_log_or, machine);
+    if (function == NULL){ return 1; }
+    if (mlisp_scope_set(function, symbol, machine) != 0){ return 1; }
+    if (mlisp_decrease(symbol, machine) != 0){ return 1; }
+    if (mlisp_decrease(function, machine) != 0){ return 1; }
+  }
+  // define ^
+  {
+    mlisp_symbol *symbol = mlisp_allocate_symbol0("^", machine);
+    if (symbol == NULL){ return 1; }
+    mlisp_c_function *function = mlisp_allocate_c_function(MLISP_FUNCTION, __mlisp_log_xor, machine);
+    if (function == NULL){ return 1; }
+    if (mlisp_scope_set(function, symbol, machine) != 0){ return 1; }
+    if (mlisp_decrease(symbol, machine) != 0){ return 1; }
+    if (mlisp_decrease(function, machine) != 0){ return 1; }
+  }
   // define floor
   {
     mlisp_symbol *symbol = mlisp_allocate_symbol0("floor", machine);
@@ -2300,6 +2609,16 @@ static int setup_builtin_function (mlisp_machine *machine){
     if (mlisp_decrease(symbol, machine) != 0){ return 1; }
     if (mlisp_decrease(function, machine) != 0){ return 1; }
   }
+  // define !=
+  {
+    mlisp_symbol *symbol = mlisp_allocate_symbol0("!=", machine);
+    if (symbol == NULL){ return 1; }
+    mlisp_c_function *function = mlisp_allocate_c_function(MLISP_FUNCTION, __mlisp_unequal, machine);
+    if (function == NULL){ return 1; }
+    if (mlisp_scope_set(function, symbol, machine) != 0){ return 1; }
+    if (mlisp_decrease(symbol, machine) != 0){ return 1; }
+    if (mlisp_decrease(function, machine) != 0){ return 1; }
+  }
   // define <
   {
     mlisp_symbol *symbol = mlisp_allocate_symbol0("<", machine);
@@ -2335,6 +2654,56 @@ static int setup_builtin_function (mlisp_machine *machine){
     mlisp_symbol *symbol = mlisp_allocate_symbol0(">=", machine);
     if (symbol == NULL){ return 1; }
     mlisp_c_function *function = mlisp_allocate_c_function(MLISP_FUNCTION, __mlisp_great_or_equal, machine);
+    if (function == NULL){ return 1; }
+    if (mlisp_scope_set(function, symbol, machine) != 0){ return 1; }
+    if (mlisp_decrease(symbol, machine) != 0){ return 1; }
+    if (mlisp_decrease(function, machine) != 0){ return 1; }
+  }
+  // define numberp
+  {
+    mlisp_symbol *symbol = mlisp_allocate_symbol0("numberp", machine);
+    if (symbol == NULL){ return 1; }
+    mlisp_c_function *function = mlisp_allocate_c_function(MLISP_FUNCTION, __mlisp_numberp, machine);
+    if (function == NULL){ return 1; }
+    if (mlisp_scope_set(function, symbol, machine) != 0){ return 1; }
+    if (mlisp_decrease(symbol, machine) != 0){ return 1; }
+    if (mlisp_decrease(function, machine) != 0){ return 1; }
+  }
+  // define symbolp
+  {
+    mlisp_symbol *symbol = mlisp_allocate_symbol0("symbolp", machine);
+    if (symbol == NULL){ return 1; }
+    mlisp_c_function *function = mlisp_allocate_c_function(MLISP_FUNCTION, __mlisp_symbolp, machine);
+    if (function == NULL){ return 1; }
+    if (mlisp_scope_set(function, symbol, machine) != 0){ return 1; }
+    if (mlisp_decrease(symbol, machine) != 0){ return 1; }
+    if (mlisp_decrease(function, machine) != 0){ return 1; }
+  }
+  // define functionp
+  {
+    mlisp_symbol *symbol = mlisp_allocate_symbol0("functionp", machine);
+    if (symbol == NULL){ return 1; }
+    mlisp_c_function *function = mlisp_allocate_c_function(MLISP_FUNCTION, __mlisp_functionp, machine);
+    if (function == NULL){ return 1; }
+    if (mlisp_scope_set(function, symbol, machine) != 0){ return 1; }
+    if (mlisp_decrease(symbol, machine) != 0){ return 1; }
+    if (mlisp_decrease(function, machine) != 0){ return 1; }
+  }
+  // define consp
+  {
+    mlisp_symbol *symbol = mlisp_allocate_symbol0("consp", machine);
+    if (symbol == NULL){ return 1; }
+    mlisp_c_function *function = mlisp_allocate_c_function(MLISP_FUNCTION, __mlisp_consp, machine);
+    if (function == NULL){ return 1; }
+    if (mlisp_scope_set(function, symbol, machine) != 0){ return 1; }
+    if (mlisp_decrease(symbol, machine) != 0){ return 1; }
+    if (mlisp_decrease(function, machine) != 0){ return 1; }
+  }
+  // define listp
+  {
+    mlisp_symbol *symbol = mlisp_allocate_symbol0("listp", machine);
+    if (symbol == NULL){ return 1; }
+    mlisp_c_function *function = mlisp_allocate_c_function(MLISP_FUNCTION, __mlisp_listp, machine);
     if (function == NULL){ return 1; }
     if (mlisp_scope_set(function, symbol, machine) != 0){ return 1; }
     if (mlisp_decrease(symbol, machine) != 0){ return 1; }
@@ -2425,6 +2794,16 @@ static int setup_builtin_function (mlisp_machine *machine){
     mlisp_symbol *symbol = mlisp_allocate_symbol0("writeln", machine);
     if (symbol == NULL){ return 1; }
     mlisp_c_function *function = mlisp_allocate_c_function(MLISP_FUNCTION, __mlisp_writeln, machine);
+    if (function == NULL){ return 1; }
+    if (mlisp_scope_set(function, symbol, machine) != 0){ return 1; }
+    if (mlisp_decrease(symbol, machine) != 0){ return 1; }
+    if (mlisp_decrease(function, machine) != 0){ return 1; }
+  }
+  // define error
+  {
+    mlisp_symbol *symbol = mlisp_allocate_symbol0("error", machine);
+    if (symbol == NULL){ return 1; }
+    mlisp_c_function *function = mlisp_allocate_c_function(MLISP_FUNCTION, __mlisp_error, machine);
     if (function == NULL){ return 1; }
     if (mlisp_scope_set(function, symbol, machine) != 0){ return 1; }
     if (mlisp_decrease(symbol, machine) != 0){ return 1; }

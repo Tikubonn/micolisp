@@ -40,6 +40,9 @@ setup: .always
 	cp hashset/libhashset.so lib/libhashset.so
 	cp hashset/libhashset.a lib/libhashset.a
 
+dist: .always 
+	make mlisp.tar.gz
+
 clean: .always
 	rm -f mlisp.o
 
@@ -80,3 +83,6 @@ libmlisp.a: mlisp.o
 
 mlisp.exe: main.c libmlisp.so 
 	gcc $(CFLAGS) main.c libmlisp.so -o mlisp.exe
+
+mlisp.tar.gz: mlisp.exe libmlisp.so README.md LICENSE
+	tar cvfz mlisp.tar.gz mlisp.exe libmlisp.so README.md LICENSE

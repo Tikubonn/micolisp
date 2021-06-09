@@ -1,7 +1,6 @@
 
 lib/*
 include/*
-example/*
 
 !lib/.gitkeep
 !include/.gitkeep
@@ -10,5 +9,7 @@ example/*
 *.a
 *.so
 *.exe
+*.tar
+*.tar.gz
 
 test/*.txt

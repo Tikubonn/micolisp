@@ -2,10 +2,10 @@
 export CFLAGS = -I. -Iinclude -Llib
 
 debug: .always 
-	make libmlisp.a libmlisp.so mlisp.exe CFLAGS="$(CFLAGS) -O0 -g3 -Wall"
+	make libmicolisp.a libmicolisp.so micolisp.exe CFLAGS="$(CFLAGS) -O0 -g3 -Wall"
 
 release: .always 
-	make libmlisp.a libmlisp.so mlisp.exe CFLAGS="$(CFLAGS) -O3 -Wall"
+	make libmicolisp.a libmicolisp.so micolisp.exe CFLAGS="$(CFLAGS) -O3 -Wall"
 
 test: .always
 	make debug 
@@ -41,10 +41,10 @@ setup: .always
 	cp hashset/libhashset.a lib/libhashset.a
 
 dist: .always 
-	make mlisp.tar.gz
+	make micolisp.tar.gz
 
 clean: .always
-	rm -f mlisp.o
+	rm -f micolisp.o
 
 # libhashset.so: lib/libhashset.so
 # 	cp lib/libhashset.so libhashset.so
@@ -61,28 +61,28 @@ clean: .always
 # libcgcmemnode.so: lib/libcgcmemnode.so
 # 	cp lib/libcgcmemnode.so libcgcmemnode.so
 
-# test.exe: test.c libmlisp.so mlisp.h libcgcmemnode.so libmemnode.so libbitarray.so libhashtable.so libhashset.so
-# 	gcc $(CFLAGS) test.c libmlisp.so libcgcmemnode.so libmemnode.so libbitarray.so libhashtable.so libhashset.so -o test.exe 
+# test.exe: test.c libmicolisp.so micolisp.h libcgcmemnode.so libmemnode.so libbitarray.so libhashtable.so libhashset.so
+# 	gcc $(CFLAGS) test.c libmicolisp.so libcgcmemnode.so libmemnode.so libbitarray.so libhashtable.so libhashset.so -o test.exe 
 
-test.exe: test.c libmlisp.so mlisp.h
-	gcc $(CFLAGS) test.c libmlisp.so -o test.exe 
+test.exe: test.c libmicolisp.so micolisp.h
+	gcc $(CFLAGS) test.c libmicolisp.so -o test.exe 
 
 .always:
 
-mlisp.o: mlisp.c mlisp.h 
-	gcc $(CFLAGS) -c mlisp.c -o mlisp.o
+micolisp.o: micolisp.c micolisp.h 
+	gcc $(CFLAGS) -c micolisp.c -o micolisp.o
 
-# libmlisp.so: mlisp.o lib/libcgcmemnode.so lib/libbitarray.so lib/libmemnode.so lib/libhashtable.so lib/libhashset.so
-# 	gcc $(CFLAGS) -shared mlisp.o lib/libcgcmemnode.so lib/libbitarray.so lib/libmemnode.so lib/libhashtable.so lib/libhashset.so -o libmlisp.so
+# libmicolisp.so: micolisp.o lib/libcgcmemnode.so lib/libbitarray.so lib/libmemnode.so lib/libhashtable.so lib/libhashset.so
+# 	gcc $(CFLAGS) -shared micolisp.o lib/libcgcmemnode.so lib/libbitarray.so lib/libmemnode.so lib/libhashtable.so lib/libhashset.so -o libmicolisp.so
 
-libmlisp.so: mlisp.o lib/libcgcmemnode.a lib/libbitarray.a lib/libmemnode.a lib/libhashtable.a lib/libhashset.a
-	gcc $(CFLAGS) -shared mlisp.o lib/libcgcmemnode.a lib/libbitarray.a lib/libmemnode.a lib/libhashtable.a lib/libhashset.a -o libmlisp.so
+libmicolisp.so: micolisp.o lib/libcgcmemnode.a lib/libbitarray.a lib/libmemnode.a lib/libhashtable.a lib/libhashset.a
+	gcc $(CFLAGS) -shared micolisp.o lib/libcgcmemnode.a lib/libbitarray.a lib/libmemnode.a lib/libhashtable.a lib/libhashset.a -o libmicolisp.so
 
-libmlisp.a: mlisp.o 
-	ar r libmlisp.a mlisp.o
+libmicolisp.a: micolisp.o 
+	ar r libmicolisp.a micolisp.o
 
-mlisp.exe: main.c libmlisp.so 
-	gcc $(CFLAGS) main.c libmlisp.so -o mlisp.exe
+micolisp.exe: main.c libmicolisp.so 
+	gcc $(CFLAGS) main.c libmicolisp.so -o micolisp.exe
 
-mlisp.tar.gz: mlisp.exe libmlisp.so README.md LICENSE
-	tar cvfz mlisp.tar.gz mlisp.exe libmlisp.so README.md LICENSE
+micolisp.tar.gz: micolisp.exe libmicolisp.so README.md LICENSE
+	tar cvfz micolisp.tar.gz micolisp.exe libmicolisp.so README.md LICENSE

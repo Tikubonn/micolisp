@@ -1,5 +1,5 @@
 
-# MLisp
+# MicoLisp
 
 自家製のLisp処理系（方言）です。
 
@@ -50,7 +50,7 @@ GCが正常に動作しているか不明なのでメモリリーク関連のテ
 * gcc (MinGW.org GCC-6.3.0-1) 6.3.0
 * GNU gdb (GDB) 7.6.1
 
-## Build MLisp
+## Build MicoLisp
 
 ```
 make setup
@@ -60,4 +60,4 @@ make test
 
 ## License 
 
-MLisp released under the [MIT License](LICENSE).
+MicoLisp released under the [MIT License](LICENSE).

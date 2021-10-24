@@ -16,6 +16,8 @@
 
 // hashset
 
+static bool micolisp_symbol_equal (micolisp_symbol*, micolisp_symbol*);
+
 static size_t __hashset_hash (void *symbol, void *arg){
   return ((micolisp_symbol*)symbol)->hash;
 }
@@ -205,7 +207,7 @@ micolisp_symbol *micolisp_allocate_symbol0 (char *characters, micolisp_machine *
   return micolisp_allocate_symbol(characters, length, machine);
 }
 
-bool micolisp_symbol_equal (micolisp_symbol *symbol1, micolisp_symbol *symbol2){
+static bool micolisp_symbol_equal (micolisp_symbol *symbol1, micolisp_symbol *symbol2){
   if (symbol1->hash == symbol2->hash && symbol1->length == symbol2->length){
     for (size_t index = 0; index < symbol1->length; index++){
       if (symbol1->characters[index] != symbol2->characters[index]){ return false; }
@@ -236,6 +238,8 @@ static int micolisp_c_function_call (micolisp_cons *args, micolisp_c_function *f
 // user-function
 
 static void micolisp_function_init (micolisp_function_type, micolisp_function*);
+static int micolisp_scope_begin (micolisp_machine*);
+static int micolisp_scope_end (micolisp_machine*);
 
 micolisp_user_function *micolisp_allocate_user_function (micolisp_function_type type, micolisp_cons *args, micolisp_cons *form, micolisp_machine *machine){
   void *argsdereferenced;
@@ -559,7 +563,7 @@ int micolisp_scope_reference_get (micolisp_scope_reference *reference, void **va
   return 1;
 }
 
-int micolisp_scope_begin (micolisp_machine *machine){
+static int micolisp_scope_begin (micolisp_machine *machine){
   if (micolisp_increase(machine->scope, machine) != 0){ return 1; }
   micolisp_scope *scope = micolisp_allocate(MLISP_SCOPE, sizeof(micolisp_scope), machine);
   if (scope == NULL){ return 1; }
@@ -571,7 +575,7 @@ int micolisp_scope_begin (micolisp_machine *machine){
   return 0;
 }
 
-int micolisp_scope_end (micolisp_machine *machine){
+static int micolisp_scope_end (micolisp_machine *machine){
   if (machine->scope != NULL){
     micolisp_scope *parent = machine->scope->parent;
     if (micolisp_decrease(machine->scope, machine) != 0){ return 1; }

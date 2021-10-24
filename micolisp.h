@@ -123,9 +123,9 @@ typedef struct micolisp_error_info {
 
 extern _Thread_local micolisp_error_info micolisp_error;
 
-extern void micolisp_error_info_set (int, char*, size_t);
-extern void micolisp_error_info_set0 (int, char*);
-extern void micolisp_error_info_get (int*, char*);
+extern void micolisp_error_set (int, char*, size_t);
+extern void micolisp_error_set0 (int, char*);
+extern void micolisp_error_get (int*, char*);
 
 // number 
 
@@ -135,7 +135,6 @@ extern micolisp_number *micolisp_allocate_number (micolisp_machine*);
 
 extern micolisp_symbol *micolisp_allocate_symbol (char*, size_t, micolisp_machine*);
 extern micolisp_symbol *micolisp_allocate_symbol0 (char*, micolisp_machine*);
-extern bool micolisp_symbol_equal (micolisp_symbol*, micolisp_symbol*);
 
 // c-function
 
@@ -169,8 +168,6 @@ extern int micolisp_scope_get (micolisp_symbol*, micolisp_machine*, void**);
 extern micolisp_scope_reference *micolisp_scope_get_reference (micolisp_symbol*, micolisp_machine*);
 extern int micolisp_scope_reference_set (void*, micolisp_scope_reference*, micolisp_machine*);
 extern int micolisp_scope_reference_get (micolisp_scope_reference*, void**);
-extern int micolisp_scope_begin (micolisp_machine*);
-extern int micolisp_scope_end (micolisp_machine*);
 
 // reference 
 

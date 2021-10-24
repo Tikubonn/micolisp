@@ -26,8 +26,8 @@ static bool __hashset_compare (void *symbol1, void *symbol2, void *arg){
   return micolisp_symbol_equal(symbol1, symbol2);
 }
 
-static const hashset_class __MLISP_HASHSET_CLASS = { __hashset_hash, __hashset_compare, NULL, NULL };
-static const hashset_class *MLISP_HASHSET_CLASS = &__MLISP_HASHSET_CLASS;
+static const hashset_class __MICOLISP_HASHSET_CLASS = { __hashset_hash, __hashset_compare, NULL, NULL };
+static const hashset_class *MICOLISP_HASHSET_CLASS = &__MICOLISP_HASHSET_CLASS;
 
 // hashtable
 
@@ -39,8 +39,8 @@ static bool __hashtable_compare (void *symbol1, void *symbol2, void *arg){
   return symbol1 == symbol2;
 }
 
-static const hashtable_class __MLISP_HASHTABLE_CLASS = { __hashtable_hash, __hashtable_compare, NULL, NULL };
-static const hashtable_class *MLISP_HASHTABLE_CLASS = &__MLISP_HASHTABLE_CLASS;
+static const hashtable_class __MICOLISP_HASHTABLE_CLASS = { __hashtable_hash, __hashtable_compare, NULL, NULL };
+static const hashtable_class *MICOLISP_HASHTABLE_CLASS = &__MICOLISP_HASHTABLE_CLASS;
 
 // string utility 
 
@@ -67,7 +67,7 @@ static void copy (char *characters, size_t size, char *charactersto){
 
 static int listp (micolisp_cons *list, micolisp_machine *machine){
   for (micolisp_cons *cons = list; cons != NULL; cons = cons->cdr){
-    if (!micolisp_typep(MLISP_CONS, cons, machine)){ return false; }
+    if (!micolisp_typep(MICOLISP_CONS, cons, machine)){ return false; }
   }
   return true;
 }
@@ -106,16 +106,16 @@ static micolisp_cons *list_nreverse (micolisp_cons *list){
 
 // error info 
 
-_Thread_local micolisp_error_info micolisp_error = { MLISP_NOERROR, {} };
+_Thread_local micolisp_error_info micolisp_error = { MICOLISP_NOERROR, {} };
 
 void micolisp_error_set (int code, char *message, size_t messagelen){
   micolisp_error.code = code;
-  if (MLISP_ERROR_INFO_MAX_LENGTH <= messagelen){
-    copy(message, MLISP_ERROR_INFO_MAX_LENGTH, micolisp_error.message);
-    micolisp_error.message[MLISP_ERROR_INFO_MAX_LENGTH -1] = '\0';
-    micolisp_error.message[MLISP_ERROR_INFO_MAX_LENGTH -2] = '.';
-    micolisp_error.message[MLISP_ERROR_INFO_MAX_LENGTH -3] = '.';
-    micolisp_error.message[MLISP_ERROR_INFO_MAX_LENGTH -4] = '.';
+  if (MICOLISP_ERROR_INFO_MAX_LENGTH <= messagelen){
+    copy(message, MICOLISP_ERROR_INFO_MAX_LENGTH, micolisp_error.message);
+    micolisp_error.message[MICOLISP_ERROR_INFO_MAX_LENGTH -1] = '\0';
+    micolisp_error.message[MICOLISP_ERROR_INFO_MAX_LENGTH -2] = '.';
+    micolisp_error.message[MICOLISP_ERROR_INFO_MAX_LENGTH -3] = '.';
+    micolisp_error.message[MICOLISP_ERROR_INFO_MAX_LENGTH -4] = '.';
   }
   else {
     copy(message, messagelen, micolisp_error.message);
@@ -129,21 +129,21 @@ void micolisp_error_set0 (int code, char *message){
 }
 
 void micolisp_error_get (int *codep, char *messagep){
-  if (micolisp_error.code == MLISP_NOERROR){
-    *codep = MLISP_NOERROR;
+  if (micolisp_error.code == MICOLISP_NOERROR){
+    *codep = MICOLISP_NOERROR;
     char noerrormessage[] = "no error recorded.";
     copy(noerrormessage, sizeof(noerrormessage), messagep);
   }
   else {
     *codep = micolisp_error.code;
-    copy(micolisp_error.message, MLISP_ERROR_INFO_MAX_LENGTH, messagep);
+    copy(micolisp_error.message, MICOLISP_ERROR_INFO_MAX_LENGTH, messagep);
   }
 }
 
 // number 
 
 micolisp_number *micolisp_allocate_number (micolisp_machine *machine){
-  return micolisp_allocate(MLISP_NUMBER, sizeof(micolisp_number), machine);
+  return micolisp_allocate(MICOLISP_NUMBER, sizeof(micolisp_number), machine);
 }
 
 // symbol 
@@ -158,14 +158,14 @@ static size_t calculate_hash (char *characters, size_t length){
 }
 
 static int micolisp_symbol_init (char *characters, size_t length, micolisp_symbol *symbol){
-  if (length <= MLISP_SYMBOL_MAX_LENGTH){
+  if (length <= MICOLISP_SYMBOL_MAX_LENGTH){
     copy(characters, length, symbol->characters);
     symbol->length = length;
     symbol->hash = calculate_hash(characters, length);
     return 0;
   }
   else {
-    micolisp_error_set0(MLISP_VALUE_ERROR, "symbol name's length must be less than MLISP_ERROR_INFO_MAX_LENGTH."); 
+    micolisp_error_set0(MICOLISP_VALUE_ERROR, "symbol name's length must be less than MICOLISP_ERROR_INFO_MAX_LENGTH."); 
     return 1; 
   }
 }
@@ -175,19 +175,19 @@ micolisp_symbol *micolisp_allocate_symbol (char *characters, size_t length, mico
   if (micolisp_symbol_init(characters, length, &symbol) != 0){ return NULL; }
   void *foundsymbol;
   if (hashset_get(&symbol, &(machine->symbol), &foundsymbol) != 0){
-    micolisp_symbol *sym = micolisp_allocate(MLISP_SYMBOL, sizeof(micolisp_symbol), machine);
+    micolisp_symbol *sym = micolisp_allocate(MICOLISP_SYMBOL, sizeof(micolisp_symbol), machine);
     if (sym == NULL){ return NULL; }
     *sym = symbol;
     if (hashset_add(sym, &(machine->symbol)) != 0){
       size_t newlen = MAX(8, machine->symbol.length * 2);
-      hashset_entry *newentries = micolisp_allocate(MLISP_HASHSET_ENTRY, newlen * sizeof(hashset_entry), machine);
+      hashset_entry *newentries = micolisp_allocate(MICOLISP_HASHSET_ENTRY, newlen * sizeof(hashset_entry), machine);
       if (newentries == NULL){ return NULL; }
       if (hashset_stretch(newentries, newlen, &(machine->symbol)) != 0){ 
-        micolisp_error_set0(MLISP_INTERNAL_ERROR, "internal function hashset_stretch() was failed."); 
+        micolisp_error_set0(MICOLISP_INTERNAL_ERROR, "internal function hashset_stretch() was failed."); 
         return NULL; 
       }
       if (hashset_add(sym, &(machine->symbol)) != 0){ 
-        micolisp_error_set0(MLISP_INTERNAL_ERROR, "internal function hashset_add() was failed."); 
+        micolisp_error_set0(MICOLISP_INTERNAL_ERROR, "internal function hashset_add() was failed."); 
         return NULL; 
       }
       return sym;
@@ -224,7 +224,7 @@ static bool micolisp_symbol_equal (micolisp_symbol *symbol1, micolisp_symbol *sy
 static void micolisp_function_init (micolisp_function_type, micolisp_function*);
 
 micolisp_c_function *micolisp_allocate_c_function (micolisp_function_type type, micolisp_c_function_main main, micolisp_machine *machine){
-  micolisp_c_function *function = micolisp_allocate(MLISP_C_FUNCTION, sizeof(micolisp_c_function), machine);
+  micolisp_c_function *function = micolisp_allocate(MICOLISP_C_FUNCTION, sizeof(micolisp_c_function), machine);
   if (function == NULL){ return NULL; }
   micolisp_function_init(type, &(function->function));
   function->main = main;
@@ -247,12 +247,12 @@ micolisp_user_function *micolisp_allocate_user_function (micolisp_function_type 
   if (micolisp_reference_get(args, machine, &argsdereferenced) != 0){ return NULL; }
   if (micolisp_reference_get(form, machine, &formdereferenced) != 0){ return NULL; }
   if (!listp(argsdereferenced, machine)){
-    micolisp_error_set0(MLISP_TYPE_ERROR, "args must be a list.");
+    micolisp_error_set0(MICOLISP_TYPE_ERROR, "args must be a list.");
     return NULL; 
   }
   if (micolisp_increase(argsdereferenced, machine) != 0){ return NULL; }
   if (micolisp_increase(formdereferenced, machine) != 0){ return NULL; }
-  micolisp_user_function *function = micolisp_allocate(MLISP_USER_FUNCTION, sizeof(micolisp_user_function), machine);
+  micolisp_user_function *function = micolisp_allocate(MICOLISP_USER_FUNCTION, sizeof(micolisp_user_function), machine);
   if (function == NULL){ return NULL; }
   micolisp_function_init(type, &(function->function));
   function->args = argsdereferenced;
@@ -274,7 +274,7 @@ static int micolisp_user_function_call (micolisp_cons *args, micolisp_user_funct
           break;
         }
         else {
-          micolisp_error_set0(MLISP_VALUE_ERROR, "need a symbol after &rest keyword."); 
+          micolisp_error_set0(MICOLISP_VALUE_ERROR, "need a symbol after &rest keyword."); 
           return 1;
         }
       }
@@ -283,7 +283,7 @@ static int micolisp_user_function_call (micolisp_cons *args, micolisp_user_funct
       }
     }
     else {
-      micolisp_error_set0(MLISP_ERROR, "given not enough argument."); 
+      micolisp_error_set0(MICOLISP_ERROR, "given not enough argument."); 
       return 1; 
     }
   }
@@ -300,7 +300,7 @@ static void micolisp_function_init (micolisp_function_type type, micolisp_functi
 }
 
 bool micolisp_functionp (void *function, micolisp_machine *machine){
-  return micolisp_typep(MLISP_C_FUNCTION, function, machine) || micolisp_typep(MLISP_USER_FUNCTION, function, machine);
+  return micolisp_typep(MICOLISP_C_FUNCTION, function, machine) || micolisp_typep(MICOLISP_USER_FUNCTION, function, machine);
 }
 
 static int eval_args (micolisp_cons *args, micolisp_machine *machine, micolisp_cons **argsevaluatedp){
@@ -321,7 +321,7 @@ static int eval_args (micolisp_cons *args, micolisp_machine *machine, micolisp_c
 static int micolisp_function_call (micolisp_cons *args, void *function, micolisp_machine *machine, void **valuep){
   if (micolisp_functionp(function, machine)){
     micolisp_cons *newargs;
-    if (((micolisp_function*)function)->type == MLISP_FUNCTION){
+    if (((micolisp_function*)function)->type == MICOLISP_FUNCTION){
       if (eval_args(args, machine, &newargs) != 0){ return 1; }
     }
     else {
@@ -330,19 +330,19 @@ static int micolisp_function_call (micolisp_cons *args, void *function, micolisp
     }
     int status;
     void *value;
-    if (micolisp_typep(MLISP_C_FUNCTION, function, machine)){
+    if (micolisp_typep(MICOLISP_C_FUNCTION, function, machine)){
       status = micolisp_c_function_call(newargs, function, machine, &value);
     }
     else 
-    if (micolisp_typep(MLISP_USER_FUNCTION, function, machine)){
+    if (micolisp_typep(MICOLISP_USER_FUNCTION, function, machine)){
       status = micolisp_user_function_call(newargs, function, machine, &value);
     }
     else {
-      micolisp_error_set0(MLISP_TYPE_ERROR, "tried calling a non function."); 
+      micolisp_error_set0(MICOLISP_TYPE_ERROR, "tried calling a non function."); 
       return 1; 
     }
     void *newvalue;
-    if (((micolisp_function*)function)->type == MLISP_MACRO){
+    if (((micolisp_function*)function)->type == MICOLISP_MACRO){
       if (micolisp_eval(value, machine, &newvalue) != 0){ return 1; }
     }
     else {
@@ -355,7 +355,7 @@ static int micolisp_function_call (micolisp_cons *args, void *function, micolisp
     return status;
   }
   else {
-    micolisp_error_set0(MLISP_TYPE_ERROR, "tried calling a non function."); 
+    micolisp_error_set0(MICOLISP_TYPE_ERROR, "tried calling a non function."); 
     return 1;
   }
 }
@@ -383,7 +383,7 @@ micolisp_cons *micolisp_allocate_cons (void *car, void *cdr, micolisp_machine *m
   if (micolisp_reference_get(cdr, machine, &cdrdereferenced) != 0){ return NULL; }
   if (micolisp_increase(cardereferenced, machine) != 0){ return NULL; }
   if (micolisp_increase(cdrdereferenced, machine) != 0){ return NULL; }
-  micolisp_cons *cons = micolisp_allocate(MLISP_CONS, sizeof(micolisp_cons), machine);
+  micolisp_cons *cons = micolisp_allocate(MICOLISP_CONS, sizeof(micolisp_cons), machine);
   if (cons == NULL){ return NULL; }
   cons->car = cardereferenced;
   cons->cdr = cdrdereferenced;
@@ -394,39 +394,39 @@ int micolisp_cons_set (void *value, micolisp_cons_whence whence, micolisp_cons *
   void *valuedereferenced;
   if (micolisp_reference_get(value, machine, &valuedereferenced) != 0){ return 1; }
   switch (whence){
-    case MLISP_CONS_CAR:
+    case MICOLISP_CONS_CAR:
       if (micolisp_increase(valuedereferenced, machine) != 0){ return 1; }
       if (micolisp_decrease(cons->car, machine) != 0){ return 1; }
       cons->car = value;
       return 0;
-    case MLISP_CONS_CDR:
+    case MICOLISP_CONS_CDR:
       if (micolisp_increase(valuedereferenced, machine) != 0){ return 1; }
       if (micolisp_decrease(cons->cdr, machine) != 0){ return 1; }
       cons->cdr = value;
       return 0;
     default:
-      micolisp_error_set0(MLISP_VALUE_ERROR, "given an unknown whence."); 
+      micolisp_error_set0(MICOLISP_VALUE_ERROR, "given an unknown whence."); 
       return 1;
   }
 }
 
 int micolisp_cons_get (micolisp_cons_whence whence, micolisp_cons *cons, void **valuep){
   switch (whence){
-    case MLISP_CONS_CAR: 
+    case MICOLISP_CONS_CAR: 
       *valuep = cons->car; 
       return 0;
-    case MLISP_CONS_CDR: 
+    case MICOLISP_CONS_CDR: 
       *valuep = cons->cdr; 
       return 0;
     default: 
-      micolisp_error_set0(MLISP_VALUE_ERROR, "given an unknown whence."); 
+      micolisp_error_set0(MICOLISP_VALUE_ERROR, "given an unknown whence."); 
       return 1;
   }
 }
 
 micolisp_cons_reference *micolisp_cons_get_reference (micolisp_cons_whence whence, micolisp_cons *cons, micolisp_machine *machine){
   if (micolisp_increase(cons, machine) != 0){ return NULL; }
-  micolisp_cons_reference *reference = micolisp_allocate(MLISP_CONS_REFERENCE, sizeof(micolisp_cons_reference), machine);
+  micolisp_cons_reference *reference = micolisp_allocate(MICOLISP_CONS_REFERENCE, sizeof(micolisp_cons_reference), machine);
   if (reference == NULL){ return NULL; }
   reference->whence = whence;
   reference->cons = cons;
@@ -448,8 +448,8 @@ int micolisp_scope_set (void *value, micolisp_symbol *name, micolisp_machine *ma
   void *namedereferenced;
   if (micolisp_reference_get(value, machine, &valuedereferenced) != 0){ return 1; }
   if (micolisp_reference_get(name, machine, &namedereferenced) != 0){ return 1; }
-  if (!micolisp_typep(MLISP_SYMBOL, namedereferenced, machine)){ 
-    micolisp_error_set0(MLISP_TYPE_ERROR, "name must be a symbol.");
+  if (!micolisp_typep(MICOLISP_SYMBOL, namedereferenced, machine)){ 
+    micolisp_error_set0(MICOLISP_TYPE_ERROR, "name must be a symbol.");
     return 1; 
   }
   if (machine->scope != NULL){
@@ -458,7 +458,7 @@ int micolisp_scope_set (void *value, micolisp_symbol *name, micolisp_machine *ma
     if (hashtable_get(namedereferenced, &(machine->scope->hashtable), &foundvalue) == 0){
       if (micolisp_decrease(foundvalue, machine) != 0){ return 1; }
       if (hashtable_set(valuedereferenced, namedereferenced, &(machine->scope->hashtable)) != 0){ 
-        micolisp_error_set0(MLISP_INTERNAL_ERROR, "internal function hashtable_set() was failed.");
+        micolisp_error_set0(MICOLISP_INTERNAL_ERROR, "internal function hashtable_set() was failed.");
         return 1; 
       }
       return 0;
@@ -467,14 +467,14 @@ int micolisp_scope_set (void *value, micolisp_symbol *name, micolisp_machine *ma
       if (micolisp_increase(namedereferenced, machine) != 0){ return 1; }
       if (hashtable_set(valuedereferenced, namedereferenced, &(machine->scope->hashtable)) != 0){
         size_t newlen = MAX(8, machine->scope->hashtable.length * 2);
-        hashtable_entry *newentries = micolisp_allocate(MLISP_HASHTABLE_ENTRY, newlen * sizeof(hashtable_entry), machine);
+        hashtable_entry *newentries = micolisp_allocate(MICOLISP_HASHTABLE_ENTRY, newlen * sizeof(hashtable_entry), machine);
         if (newentries == NULL){ return 1; }
         if (hashtable_stretch(newentries, newlen, &(machine->scope->hashtable)) != 0){ 
-          micolisp_error_set0(MLISP_INTERNAL_ERROR, "internal function hashtable_stretch() was failed.");
+          micolisp_error_set0(MICOLISP_INTERNAL_ERROR, "internal function hashtable_stretch() was failed.");
           return 1; 
         }
         if (hashtable_set(valuedereferenced, namedereferenced, &(machine->scope->hashtable)) != 0){
-          micolisp_error_set0(MLISP_INTERNAL_ERROR, "internal function hashtable_set() was failed.");
+          micolisp_error_set0(MICOLISP_INTERNAL_ERROR, "internal function hashtable_set() was failed.");
           return 1; 
         }
         return 0;
@@ -485,7 +485,7 @@ int micolisp_scope_set (void *value, micolisp_symbol *name, micolisp_machine *ma
     }
   }
   else {
-    micolisp_error_set0(MLISP_ERROR, "no assignable scope, because scope is nil.");
+    micolisp_error_set0(MICOLISP_ERROR, "no assignable scope, because scope is nil.");
     return 1;
   }
 }
@@ -493,27 +493,27 @@ int micolisp_scope_set (void *value, micolisp_symbol *name, micolisp_machine *ma
 int micolisp_scope_get (micolisp_symbol *name, micolisp_machine *machine, void **valuep){
   void *namedereferenced;
   if (micolisp_reference_get(name, machine, &namedereferenced) != 0){ return 1; }
-  if (!micolisp_typep(MLISP_SYMBOL, namedereferenced, machine)){ 
-    micolisp_error_set0(MLISP_TYPE_ERROR, "name must be a symbol.");
+  if (!micolisp_typep(MICOLISP_SYMBOL, namedereferenced, machine)){ 
+    micolisp_error_set0(MICOLISP_TYPE_ERROR, "name must be a symbol.");
     return 1; 
   }
   for (micolisp_scope *scope = machine->scope; scope != NULL; scope = scope->parent){
     if (hashtable_get(namedereferenced, &(scope->hashtable), valuep) == 0){ return 0; }
   }
-  micolisp_error_set0(MLISP_ERROR, "could not find name in the scope.");
+  micolisp_error_set0(MICOLISP_ERROR, "could not find name in the scope.");
   return 1;
 }
 
 micolisp_scope_reference *micolisp_scope_get_reference (micolisp_symbol *name, micolisp_machine *machine){
   void *namedereferenced;
   if (micolisp_scope_get(name, machine, &namedereferenced) != 0){ return NULL; }
-  if (!micolisp_typep(MLISP_SYMBOL, namedereferenced, machine)){ 
-    micolisp_error_set0(MLISP_TYPE_ERROR, "name must be a symbol.");
+  if (!micolisp_typep(MICOLISP_SYMBOL, namedereferenced, machine)){ 
+    micolisp_error_set0(MICOLISP_TYPE_ERROR, "name must be a symbol.");
     return NULL; 
   }
   if (micolisp_increase(namedereferenced, machine) != 0){ return NULL; }
   if (micolisp_increase(machine->scope, machine) != 0){ return NULL; }
-  micolisp_scope_reference *reference = micolisp_allocate(MLISP_SCOPE_REFERENCE, sizeof(micolisp_scope_reference), machine);
+  micolisp_scope_reference *reference = micolisp_allocate(MICOLISP_SCOPE_REFERENCE, sizeof(micolisp_scope_reference), machine);
   if (reference == NULL){ return NULL; }
   reference->name = namedereferenced;
   reference->scope = machine->scope;
@@ -529,7 +529,7 @@ int micolisp_scope_reference_set (void *value, micolisp_scope_reference *referen
     if (hashtable_get(reference->name, &(scope->hashtable), &foundvalue) == 0){
       if (micolisp_decrease(foundvalue, machine) != 0){ return 1; }
       if (hashtable_set(valuedereferenced, reference->name, &(scope->hashtable)) != 0){ 
-        micolisp_error_set0(MLISP_INTERNAL_ERROR, "internal function hashtable_set() was failed.");
+        micolisp_error_set0(MICOLISP_INTERNAL_ERROR, "internal function hashtable_set() was failed.");
         return 1; 
       }
       return 0;
@@ -538,14 +538,14 @@ int micolisp_scope_reference_set (void *value, micolisp_scope_reference *referen
   if (micolisp_increase(reference->name, machine) != 0){ return 1; }
   if (hashtable_set(valuedereferenced, reference->name, &(reference->scope->hashtable)) != 0){
     size_t newlen = machine->scope->hashtable.length * 2;
-    hashtable_entry *newentries = micolisp_allocate(MLISP_HASHTABLE_ENTRY, newlen * sizeof(MLISP_HASHTABLE_ENTRY), machine);
+    hashtable_entry *newentries = micolisp_allocate(MICOLISP_HASHTABLE_ENTRY, newlen * sizeof(MICOLISP_HASHTABLE_ENTRY), machine);
     if (newentries == NULL){ return 1; }
     if (hashtable_stretch(newentries, newlen, &(reference->scope->hashtable)) != 0){ 
-      micolisp_error_set0(MLISP_INTERNAL_ERROR, "internal function hashtable_stretch() was failed.");
+      micolisp_error_set0(MICOLISP_INTERNAL_ERROR, "internal function hashtable_stretch() was failed.");
       return 1;
     }
     if (hashtable_set(valuedereferenced, reference->name, &(reference->scope->hashtable)) != 0){ 
-      micolisp_error_set0(MLISP_INTERNAL_ERROR, "internal function hashtable_set() was failed.");
+      micolisp_error_set0(MICOLISP_INTERNAL_ERROR, "internal function hashtable_set() was failed.");
       return 1;
     }
     return 0;
@@ -559,17 +559,17 @@ int micolisp_scope_reference_get (micolisp_scope_reference *reference, void **va
   for (micolisp_scope *scope = reference->scope; scope != NULL; scope = scope->parent){
     if (hashtable_get(reference->name, &(scope->hashtable), valuep) == 0){ return 0; }
   }
-  micolisp_error_set0(MLISP_ERROR, "could not find name in the scope.");
+  micolisp_error_set0(MICOLISP_ERROR, "could not find name in the scope.");
   return 1;
 }
 
 static int micolisp_scope_begin (micolisp_machine *machine){
   if (micolisp_increase(machine->scope, machine) != 0){ return 1; }
-  micolisp_scope *scope = micolisp_allocate(MLISP_SCOPE, sizeof(micolisp_scope), machine);
+  micolisp_scope *scope = micolisp_allocate(MICOLISP_SCOPE, sizeof(micolisp_scope), machine);
   if (scope == NULL){ return 1; }
-  hashtable_entry *scopeentries = micolisp_allocate(MLISP_HASHTABLE_ENTRY, 8 * sizeof(hashtable_entry), machine);
+  hashtable_entry *scopeentries = micolisp_allocate(MICOLISP_HASHTABLE_ENTRY, 8 * sizeof(hashtable_entry), machine);
   if (scopeentries == NULL){ return 1; }
-  hashtable_init(scopeentries, 8, MLISP_HASHTABLE_CLASS, &(scope->hashtable));
+  hashtable_init(scopeentries, 8, MICOLISP_HASHTABLE_CLASS, &(scope->hashtable));
   scope->parent = machine->scope;
   machine->scope = scope;
   return 0;
@@ -583,7 +583,7 @@ static int micolisp_scope_end (micolisp_machine *machine){
     return 0;
   }
   else {
-    micolisp_error_set0(MLISP_ERROR, "could not back to previous scope, because scope is nil.");
+    micolisp_error_set0(MICOLISP_ERROR, "could not back to previous scope, because scope is nil.");
     return 1;
   }
 }
@@ -591,29 +591,29 @@ static int micolisp_scope_end (micolisp_machine *machine){
 // reference 
 
 bool micolisp_referencep (void *address, micolisp_machine *machine){
-  return micolisp_typep(MLISP_CONS_REFERENCE, address, machine) || micolisp_typep(MLISP_SCOPE_REFERENCE, address, machine);
+  return micolisp_typep(MICOLISP_CONS_REFERENCE, address, machine) || micolisp_typep(MICOLISP_SCOPE_REFERENCE, address, machine);
 }
 
 int micolisp_reference_set (void *value, void *reference, micolisp_machine *machine){
-  if (micolisp_typep(MLISP_CONS_REFERENCE, reference, machine)){
+  if (micolisp_typep(MICOLISP_CONS_REFERENCE, reference, machine)){
     return micolisp_cons_reference_set(value, reference, machine);
   }
   else 
-  if (micolisp_typep(MLISP_SCOPE_REFERENCE, reference, machine)){
+  if (micolisp_typep(MICOLISP_SCOPE_REFERENCE, reference, machine)){
     return micolisp_scope_reference_set(value, reference, machine);
   }
   else {
-    micolisp_error_set0(MLISP_VALUE_ERROR, "tried assigning value to a non reference.");
+    micolisp_error_set0(MICOLISP_VALUE_ERROR, "tried assigning value to a non reference.");
     return 1;
   }
 }
 
 int micolisp_reference_get (void *mayreference, micolisp_machine *machine, void **valuep){
-  if (micolisp_typep(MLISP_CONS_REFERENCE, mayreference, machine)){
+  if (micolisp_typep(MICOLISP_CONS_REFERENCE, mayreference, machine)){
     return micolisp_cons_reference_get(mayreference, valuep);
   }
   else 
-  if (micolisp_typep(MLISP_SCOPE_REFERENCE, mayreference, machine)){
+  if (micolisp_typep(MICOLISP_SCOPE_REFERENCE, mayreference, machine)){
     return micolisp_scope_reference_get(mayreference, valuep);
   }
   else {
@@ -652,58 +652,58 @@ static void micolisp_memory_free (micolisp_memory *memory){
 
 static micolisp_memory_type micolisp_memory_info (micolisp_memory_type type, micolisp_memory *memory, size_t *sizep, cgcmemnode **cmemnodep, cgcmemnode ***cmemnodepp){
   switch (type){
-    case MLISP_NUMBER:
+    case MICOLISP_NUMBER:
       *cmemnodep = memory->number;
       *cmemnodepp = &(memory->number);
       *sizep = sizeof(micolisp_number);
       return 0;
-    case MLISP_SYMBOL:
+    case MICOLISP_SYMBOL:
       *cmemnodep = memory->symbol;
       *cmemnodepp = &(memory->symbol);
       *sizep = sizeof(micolisp_symbol);
       return 0;
-    case MLISP_CONS:
+    case MICOLISP_CONS:
       *cmemnodep = memory->cons;
       *cmemnodepp = &(memory->cons);
       *sizep = sizeof(micolisp_cons);
       return 0;
-    case MLISP_CONS_REFERENCE:
+    case MICOLISP_CONS_REFERENCE:
       *cmemnodep = memory->consreference;
       *cmemnodepp = &(memory->consreference);
       *sizep = sizeof(micolisp_cons_reference);
       return 0;
-    case MLISP_C_FUNCTION:
+    case MICOLISP_C_FUNCTION:
       *cmemnodep = memory->cfunction;
       *cmemnodepp = &(memory->cfunction);
       *sizep = sizeof(micolisp_c_function);
       return 0;
-    case MLISP_USER_FUNCTION:
+    case MICOLISP_USER_FUNCTION:
       *cmemnodep = memory->userfunction;
       *cmemnodepp = &(memory->userfunction);
       *sizep = sizeof(micolisp_user_function);
       return 0;
-    case MLISP_SCOPE:
+    case MICOLISP_SCOPE:
       *cmemnodep = memory->scope;
       *cmemnodepp = &(memory->scope);
       *sizep = sizeof(micolisp_scope);
       return 0;
-    case MLISP_SCOPE_REFERENCE:
+    case MICOLISP_SCOPE_REFERENCE:
       *cmemnodep = memory->scopereference;
       *cmemnodepp = &(memory->scopereference);
       *sizep = sizeof(micolisp_scope_reference);
       return 0;
-    case MLISP_HASHTABLE_ENTRY:
+    case MICOLISP_HASHTABLE_ENTRY:
       *cmemnodep = memory->hashtableentry;
       *cmemnodepp = &(memory->hashtableentry);
       *sizep = sizeof(hashtable_entry);
       return 0;
-    case MLISP_HASHSET_ENTRY:
+    case MICOLISP_HASHSET_ENTRY:
       *cmemnodep = memory->hashsetentry;
       *cmemnodepp = &(memory->hashsetentry);
       *sizep = sizeof(hashset_entry);
       return 0;
     default:
-      micolisp_error_set0(MLISP_VALUE_ERROR, "given an unknown type.");
+      micolisp_error_set0(MICOLISP_VALUE_ERROR, "given an unknown type.");
       return 1;
   }
 }
@@ -723,7 +723,7 @@ static void *micolisp_memory_allocate (micolisp_memory_type type, size_t size, m
   if (micolisp_memory_info(type, memory, &basesize, &cmemnode, &cmemnodep) != 0){ return NULL; }
   void *address = cgcmemnode_allocate(size, cmemnode);
   if (address == NULL){
-    micolisp_error_set0(MLISP_INTERNAL_ERROR, "internal function cgcmemnode_allocate() was failed.");
+    micolisp_error_set0(MICOLISP_INTERNAL_ERROR, "internal function cgcmemnode_allocate() was failed.");
     return NULL;
   }
   return address;
@@ -735,7 +735,7 @@ static int micolisp_memory_increase (micolisp_memory_type type, void *address, s
   cgcmemnode **cmemnodep;
   if (micolisp_memory_info(type, memory, &basesize, &cmemnode, &cmemnodep) != 0){ return 1; }
   if (cgcmemnode_increase(address, size, cmemnode) != 0){
-    micolisp_error_set0(MLISP_INTERNAL_ERROR, "internal function cgcmemnode_increase() was failed.");
+    micolisp_error_set0(MICOLISP_INTERNAL_ERROR, "internal function cgcmemnode_increase() was failed.");
     return 1;
   }
   return 0;
@@ -747,7 +747,7 @@ static int micolisp_memory_decrease (micolisp_memory_type type, void *address, s
   cgcmemnode **cmemnodep;
   if (micolisp_memory_info(type, memory, &basesize, &cmemnode, &cmemnodep) != 0){ return 1; }
   if (cgcmemnode_decrease(address, size, cmemnode) != 0){
-    micolisp_error_set0(MLISP_INTERNAL_ERROR, "internal function cgcmemnode_decrease() was failed.");
+    micolisp_error_set0(MICOLISP_INTERNAL_ERROR, "internal function cgcmemnode_decrease() was failed.");
     return 1;
   }
   return 0;
@@ -758,7 +758,7 @@ static int micolisp_memory_decrease (micolisp_memory_type type, void *address, s
 void micolisp_init (micolisp_machine *machine){
   micolisp_memory_init(&(machine->memory));
   machine->scope = NULL;
-  hashset_init(NULL, 0, MLISP_HASHSET_CLASS, &(machine->symbol));
+  hashset_init(NULL, 0, MICOLISP_HASHSET_CLASS, &(machine->symbol));
 } 
 
 bool micolisp_typep (micolisp_memory_type type, void *address, micolisp_machine *machine){
@@ -779,7 +779,7 @@ void *micolisp_allocate (micolisp_memory_type type, size_t size, micolisp_machin
     size_t newsize = align_size(size, 4096);
     cgcmemnode *newcmemnode = make_cgcmemnode(newsize, basesize, cmemnode);
     if (newcmemnode == NULL){ 
-      micolisp_error_set0(MLISP_INTERNAL_ERROR, "internal function make_cgcmemnode() was failed.");
+      micolisp_error_set0(MICOLISP_INTERNAL_ERROR, "internal function make_cgcmemnode() was failed.");
       return NULL; 
     }
     *cmemnodep = newcmemnode;
@@ -794,55 +794,55 @@ static int __micolisp_increase (void *address, micolisp_machine *machine, cgcmem
   if (cgcmemnode_history_recordp(address, history)){
     return 0; 
   }
-  if (address == MLISP_NIL){
+  if (address == MICOLISP_NIL){
     return 0;
   }
   else 
-  if (address == MLISP_T){
+  if (address == MICOLISP_T){
     return 0;
   }
   else 
-  if (micolisp_typep(MLISP_NUMBER, address, machine)){
-    if (micolisp_memory_increase(MLISP_NUMBER, address, sizeof(micolisp_number), &(machine->memory)) != 0){ return 1; }
+  if (micolisp_typep(MICOLISP_NUMBER, address, machine)){
+    if (micolisp_memory_increase(MICOLISP_NUMBER, address, sizeof(micolisp_number), &(machine->memory)) != 0){ return 1; }
     return 0;
   }
   else 
-  if (micolisp_typep(MLISP_SYMBOL, address, machine)){
-    if (micolisp_memory_increase(MLISP_SYMBOL, address, sizeof(micolisp_symbol), &(machine->memory)) != 0){ return 1; }
+  if (micolisp_typep(MICOLISP_SYMBOL, address, machine)){
+    if (micolisp_memory_increase(MICOLISP_SYMBOL, address, sizeof(micolisp_symbol), &(machine->memory)) != 0){ return 1; }
     return 0;
   }
   else 
-  if (micolisp_typep(MLISP_CONS, address, machine)){
-    if (micolisp_memory_increase(MLISP_CONS, address, sizeof(micolisp_cons), &(machine->memory)) != 0){ return 1; }
+  if (micolisp_typep(MICOLISP_CONS, address, machine)){
+    if (micolisp_memory_increase(MICOLISP_CONS, address, sizeof(micolisp_cons), &(machine->memory)) != 0){ return 1; }
     ADD_CGCMEMNODE_HISTORY(address, history);
     if (__micolisp_increase(((micolisp_cons*)address)->car, machine, history) != 0){ return 1; }
     if (__micolisp_increase(((micolisp_cons*)address)->cdr, machine, history) != 0){ return 1; }
     return 0;
   }
   else 
-  if (micolisp_typep(MLISP_CONS_REFERENCE, address, machine)){
-    if (micolisp_memory_increase(MLISP_CONS_REFERENCE, address, sizeof(micolisp_cons_reference), &(machine->memory)) != 0){ return 1; }
+  if (micolisp_typep(MICOLISP_CONS_REFERENCE, address, machine)){
+    if (micolisp_memory_increase(MICOLISP_CONS_REFERENCE, address, sizeof(micolisp_cons_reference), &(machine->memory)) != 0){ return 1; }
     ADD_CGCMEMNODE_HISTORY(address, history);
     if (__micolisp_increase(((micolisp_cons_reference*)address)->cons, machine, history) != 0){ return 1; }
     return 0;
   }
   else 
-  if (micolisp_typep(MLISP_C_FUNCTION, address, machine)){
-    if (micolisp_memory_increase(MLISP_C_FUNCTION, address, sizeof(micolisp_c_function), &(machine->memory)) != 0){ return 1; }
+  if (micolisp_typep(MICOLISP_C_FUNCTION, address, machine)){
+    if (micolisp_memory_increase(MICOLISP_C_FUNCTION, address, sizeof(micolisp_c_function), &(machine->memory)) != 0){ return 1; }
     return 0;
   }
   else 
-  if (micolisp_typep(MLISP_USER_FUNCTION, address, machine)){
-    if (micolisp_memory_increase(MLISP_USER_FUNCTION, address, sizeof(micolisp_user_function), &(machine->memory)) != 0){ return 1; }
+  if (micolisp_typep(MICOLISP_USER_FUNCTION, address, machine)){
+    if (micolisp_memory_increase(MICOLISP_USER_FUNCTION, address, sizeof(micolisp_user_function), &(machine->memory)) != 0){ return 1; }
     ADD_CGCMEMNODE_HISTORY(address, history);
     if (__micolisp_increase(((micolisp_user_function*)address)->args, machine, history) != 0){ return 1; }
     if (__micolisp_increase(((micolisp_user_function*)address)->form, machine, history) != 0){ return 1; }
     return 0;
   }
   else 
-  if (micolisp_typep(MLISP_SCOPE, address, machine)){
-    if (micolisp_memory_increase(MLISP_SCOPE, address, sizeof(micolisp_scope), &(machine->memory)) != 0){ return 1; }
-    if (micolisp_memory_increase(MLISP_HASHTABLE_ENTRY, ((micolisp_scope*)address)->hashtable.entries, ((micolisp_scope*)address)->hashtable.length * sizeof(hashtable_entry), &(machine->memory)) != 0){ return 1; }
+  if (micolisp_typep(MICOLISP_SCOPE, address, machine)){
+    if (micolisp_memory_increase(MICOLISP_SCOPE, address, sizeof(micolisp_scope), &(machine->memory)) != 0){ return 1; }
+    if (micolisp_memory_increase(MICOLISP_HASHTABLE_ENTRY, ((micolisp_scope*)address)->hashtable.entries, ((micolisp_scope*)address)->hashtable.length * sizeof(hashtable_entry), &(machine->memory)) != 0){ return 1; }
     ADD_CGCMEMNODE_HISTORY(address, history);
     hashtable_iterator iterator = hashtable_iterate(&(((micolisp_scope*)address)->hashtable));
     hashtable_entry entry;
@@ -853,15 +853,15 @@ static int __micolisp_increase (void *address, micolisp_machine *machine, cgcmem
     return 0;
   }
   else 
-  if (micolisp_typep(MLISP_SCOPE_REFERENCE, address, machine)){
-    if (micolisp_memory_increase(MLISP_SCOPE_REFERENCE, address, sizeof(micolisp_scope_reference), &(machine->memory))){ return 1; }
+  if (micolisp_typep(MICOLISP_SCOPE_REFERENCE, address, machine)){
+    if (micolisp_memory_increase(MICOLISP_SCOPE_REFERENCE, address, sizeof(micolisp_scope_reference), &(machine->memory))){ return 1; }
     ADD_CGCMEMNODE_HISTORY(address, history);
     if (__micolisp_increase(((micolisp_scope_reference*)address)->name, machine, history) != 0){ return 1; }
     if (__micolisp_increase(((micolisp_scope_reference*)address)->scope, machine, history) != 0){ return 1; }
     return 0;
   }
   else {
-    micolisp_error_set0(MLISP_TYPE_ERROR, "given unmanaged address.");
+    micolisp_error_set0(MICOLISP_TYPE_ERROR, "given unmanaged address.");
     return 1; 
   }
 }
@@ -870,55 +870,55 @@ static int __micolisp_decrease (void *address, micolisp_machine *machine, cgcmem
   if (cgcmemnode_history_recordp(address, history)){
     return 0; 
   }
-  if (address == MLISP_NIL){
+  if (address == MICOLISP_NIL){
     return 0;
   }
   else 
-  if (address == MLISP_T){
+  if (address == MICOLISP_T){
     return 0;
   }
   else 
-  if (micolisp_typep(MLISP_NUMBER, address, machine)){
-    if (micolisp_memory_decrease(MLISP_NUMBER, address, sizeof(micolisp_number), &(machine->memory)) != 0){ return 1; }
+  if (micolisp_typep(MICOLISP_NUMBER, address, machine)){
+    if (micolisp_memory_decrease(MICOLISP_NUMBER, address, sizeof(micolisp_number), &(machine->memory)) != 0){ return 1; }
     return 0;
   }
   else 
-  if (micolisp_typep(MLISP_SYMBOL, address, machine)){
-    if (micolisp_memory_decrease(MLISP_SYMBOL, address, sizeof(micolisp_symbol), &(machine->memory)) != 0){ return 1; }
+  if (micolisp_typep(MICOLISP_SYMBOL, address, machine)){
+    if (micolisp_memory_decrease(MICOLISP_SYMBOL, address, sizeof(micolisp_symbol), &(machine->memory)) != 0){ return 1; }
     return 0;
   }
   else 
-  if (micolisp_typep(MLISP_CONS, address, machine)){
-    if (micolisp_memory_decrease(MLISP_CONS, address, sizeof(micolisp_cons), &(machine->memory)) != 0){ return 1; }
+  if (micolisp_typep(MICOLISP_CONS, address, machine)){
+    if (micolisp_memory_decrease(MICOLISP_CONS, address, sizeof(micolisp_cons), &(machine->memory)) != 0){ return 1; }
     ADD_CGCMEMNODE_HISTORY(address, history);
     if (__micolisp_decrease(((micolisp_cons*)address)->car, machine, history) != 0){ return 1; }
     if (__micolisp_decrease(((micolisp_cons*)address)->cdr, machine, history) != 0){ return 1; }
     return 0;
   }
   else 
-  if (micolisp_typep(MLISP_CONS_REFERENCE, address, machine)){
-    if (micolisp_memory_decrease(MLISP_CONS_REFERENCE, address, sizeof(micolisp_cons_reference), &(machine->memory)) != 0){ return 1; }
+  if (micolisp_typep(MICOLISP_CONS_REFERENCE, address, machine)){
+    if (micolisp_memory_decrease(MICOLISP_CONS_REFERENCE, address, sizeof(micolisp_cons_reference), &(machine->memory)) != 0){ return 1; }
     ADD_CGCMEMNODE_HISTORY(address, history);
     if (__micolisp_decrease(((micolisp_cons_reference*)address)->cons, machine, history) != 0){ return 1; }
     return 0;
   }
   else 
-  if (micolisp_typep(MLISP_C_FUNCTION, address, machine)){
-    if (micolisp_memory_decrease(MLISP_C_FUNCTION, address, sizeof(micolisp_c_function), &(machine->memory)) != 0){ return 1; }
+  if (micolisp_typep(MICOLISP_C_FUNCTION, address, machine)){
+    if (micolisp_memory_decrease(MICOLISP_C_FUNCTION, address, sizeof(micolisp_c_function), &(machine->memory)) != 0){ return 1; }
     return 0;
   }
   else 
-  if (micolisp_typep(MLISP_USER_FUNCTION, address, machine)){
-    if (micolisp_memory_decrease(MLISP_USER_FUNCTION, address, sizeof(micolisp_user_function), &(machine->memory)) != 0){ return 1; }
+  if (micolisp_typep(MICOLISP_USER_FUNCTION, address, machine)){
+    if (micolisp_memory_decrease(MICOLISP_USER_FUNCTION, address, sizeof(micolisp_user_function), &(machine->memory)) != 0){ return 1; }
     ADD_CGCMEMNODE_HISTORY(address, history);
     if (__micolisp_decrease(((micolisp_user_function*)address)->args, machine, history) != 0){ return 1; }
     if (__micolisp_decrease(((micolisp_user_function*)address)->form, machine, history) != 0){ return 1; }
     return 0;
   }
   else 
-  if (micolisp_typep(MLISP_SCOPE, address, machine)){
-    if (micolisp_memory_decrease(MLISP_SCOPE, address, sizeof(micolisp_scope), &(machine->memory)) != 0){ return 1; }
-    if (micolisp_memory_decrease(MLISP_HASHTABLE_ENTRY, ((micolisp_scope*)address)->hashtable.entries, ((micolisp_scope*)address)->hashtable.length * sizeof(hashtable_entry), &(machine->memory)) != 0){ return 1; }
+  if (micolisp_typep(MICOLISP_SCOPE, address, machine)){
+    if (micolisp_memory_decrease(MICOLISP_SCOPE, address, sizeof(micolisp_scope), &(machine->memory)) != 0){ return 1; }
+    if (micolisp_memory_decrease(MICOLISP_HASHTABLE_ENTRY, ((micolisp_scope*)address)->hashtable.entries, ((micolisp_scope*)address)->hashtable.length * sizeof(hashtable_entry), &(machine->memory)) != 0){ return 1; }
     ADD_CGCMEMNODE_HISTORY(address, history);
     hashtable_iterator iterator = hashtable_iterate(&(((micolisp_scope*)address)->hashtable));
     hashtable_entry entry;
@@ -929,15 +929,15 @@ static int __micolisp_decrease (void *address, micolisp_machine *machine, cgcmem
     return 0;
   }
   else 
-  if (micolisp_typep(MLISP_SCOPE_REFERENCE, address, machine)){
-    if (micolisp_memory_decrease(MLISP_SCOPE_REFERENCE, address, sizeof(micolisp_scope_reference), &(machine->memory))){ return 1; }
+  if (micolisp_typep(MICOLISP_SCOPE_REFERENCE, address, machine)){
+    if (micolisp_memory_decrease(MICOLISP_SCOPE_REFERENCE, address, sizeof(micolisp_scope_reference), &(machine->memory))){ return 1; }
     ADD_CGCMEMNODE_HISTORY(address, history);
     if (__micolisp_decrease(((micolisp_scope_reference*)address)->name, machine, history) != 0){ return 1; }
     if (__micolisp_decrease(((micolisp_scope_reference*)address)->scope, machine, history) != 0){ return 1; }
     return 0;
   }
   else {
-    micolisp_error_set0(MLISP_TYPE_ERROR, "given unmanaged address.");
+    micolisp_error_set0(MICOLISP_TYPE_ERROR, "given unmanaged address.");
     return 1; 
   }
 }
@@ -978,7 +978,7 @@ static int micolisp_print_symbol (micolisp_symbol *symbol, FILE *file, micolisp_
 static int micolisp_print_list (micolisp_cons *cons, FILE *file, micolisp_machine *machine){
   fputs("(", file);
   for (micolisp_cons *cn = cons; cn != NULL; cn = cn->cdr){
-    if (micolisp_typep(MLISP_CONS, cn, machine)){
+    if (micolisp_typep(MICOLISP_CONS, cn, machine)){
       if (cn != cons){ fputs(" ", file); }
       if (micolisp_print(cn->car, file, machine) != 0){ return 1; }
     }
@@ -997,37 +997,37 @@ int micolisp_print (void *value, FILE *file, micolisp_machine *machine){
   if (micolisp_reference_get(value, machine, &valuedereferenced) != 0){ 
     return 1; 
   }
-  if (valuedereferenced == MLISP_T){ fprintf(file, "t"); 
+  if (valuedereferenced == MICOLISP_T){ fprintf(file, "t"); 
     return 0;
   }
   else 
-  if (valuedereferenced == MLISP_NIL){ fprintf(file, "nil"); 
+  if (valuedereferenced == MICOLISP_NIL){ fprintf(file, "nil"); 
     return 0;
   }
   else 
-  if (micolisp_typep(MLISP_NUMBER, valuedereferenced, machine)){ 
+  if (micolisp_typep(MICOLISP_NUMBER, valuedereferenced, machine)){ 
     return micolisp_print_number(valuedereferenced, file, machine);
   }
   else 
-  if (micolisp_typep(MLISP_SYMBOL, valuedereferenced, machine)){ 
+  if (micolisp_typep(MICOLISP_SYMBOL, valuedereferenced, machine)){ 
     return micolisp_print_symbol(valuedereferenced, file, machine);
   }
   else 
-  if (micolisp_typep(MLISP_CONS, valuedereferenced, machine)){ 
+  if (micolisp_typep(MICOLISP_CONS, valuedereferenced, machine)){ 
     return micolisp_print_list(valuedereferenced, file, machine);
   }
   else 
-  if (micolisp_typep(MLISP_C_FUNCTION, valuedereferenced, machine)){ 
+  if (micolisp_typep(MICOLISP_C_FUNCTION, valuedereferenced, machine)){ 
     fprintf(file, "<function #%p>", valuedereferenced); 
     return 0; 
   }
   else 
-  if (micolisp_typep(MLISP_USER_FUNCTION, valuedereferenced, machine)){ 
+  if (micolisp_typep(MICOLISP_USER_FUNCTION, valuedereferenced, machine)){ 
     fprintf(file, "<function #%p>", valuedereferenced); 
     return 0; 
   }
   else {
-    micolisp_error_set0(MLISP_TYPE_ERROR, "given an unknown type.");
+    micolisp_error_set0(MICOLISP_TYPE_ERROR, "given an unknown type.");
     return 1;
   }
 }
@@ -1040,11 +1040,11 @@ int micolisp_println (void *value, FILE *file, micolisp_machine *machine){
 
 // read 
 
-#define MLISP_READ_SUCCESS 0 
-#define MLISP_READ_ERROR 1 
-#define MLISP_READ_EOF 2 
-#define MLISP_READ_CLOSE_PAREN 3 
-#define MLISP_READ_DOT 4
+#define MICOLISP_READ_SUCCESS 0 
+#define MICOLISP_READ_ERROR 1 
+#define MICOLISP_READ_EOF 2 
+#define MICOLISP_READ_CLOSE_PAREN 3 
+#define MICOLISP_READ_DOT 4
 #define TOKEN_CHARACTERS "ABCDEFGHIJKLMNOPQRSTUVWXYZ" "abcdefghijklmnopqrstuvwxyz" "0123456789" "!#$%&*+-/:<=>?@^_|~."
 #define WHITESPACE_CHARACTERS " \t\r\n"
 
@@ -1118,7 +1118,7 @@ static int parse_as_number (char *buffer, size_t size, micolisp_machine *machine
       break;
     }
     else {
-      micolisp_error_set0(MLISP_SYNTAX_ERROR, "given a non digit character.");
+      micolisp_error_set0(MICOLISP_SYNTAX_ERROR, "given a non digit character.");
       return 1;
     }
   }
@@ -1128,7 +1128,7 @@ static int parse_as_number (char *buffer, size_t size, micolisp_machine *machine
       decimalpart += decimalbase * (buffer[index] - '0');
     }
     else {
-      micolisp_error_set0(MLISP_SYNTAX_ERROR, "given a non digit character.");
+      micolisp_error_set0(MICOLISP_SYNTAX_ERROR, "given a non digit character.");
       return 1;
     }
   }
@@ -1162,17 +1162,17 @@ static int micolisp_read_token (FILE *file, micolisp_machine *machine, void **va
       }
     }
     else {
-      micolisp_error_set0(MLISP_SYNTAX_ERROR, "read token is too much long, so buffer was overflow.");
+      micolisp_error_set0(MICOLISP_SYNTAX_ERROR, "read token is too much long, so buffer was overflow.");
       return 1; 
     }
   }
   if (parse_as_tp(buffer, index)){
-    *valuep = MLISP_T;
+    *valuep = MICOLISP_T;
     return 0;
   }
   else 
   if (parse_as_nilp(buffer, index)){
-    *valuep = MLISP_NIL;
+    *valuep = MICOLISP_NIL;
     return 0;
   }
   else 
@@ -1186,7 +1186,7 @@ static int micolisp_read_token (FILE *file, micolisp_machine *machine, void **va
 
 static int micolisp_read_quote (FILE *file, micolisp_machine *machine, void **valuep){
   if (getc(file) != '\''){
-    micolisp_error_set0(MLISP_SYNTAX_ERROR, "first character must be '\''.");
+    micolisp_error_set0(MICOLISP_SYNTAX_ERROR, "first character must be '\''.");
     return 1; 
   }
   void *value;
@@ -1200,14 +1200,14 @@ static int micolisp_read_quote (FILE *file, micolisp_machine *machine, void **va
 
 static int micolisp_read_list (FILE *file, micolisp_machine *machine, void **valuep){
   if (getc(file) != '('){ 
-    micolisp_error_set0(MLISP_SYNTAX_ERROR, "first character must be '('.");
+    micolisp_error_set0(MICOLISP_SYNTAX_ERROR, "first character must be '('.");
     return 1; 
   }
   micolisp_cons *list = NULL;
   void *value;
   while (true){
     int status = micolisp_read(file, machine, &value);
-    if (status == MLISP_READ_SUCCESS){
+    if (status == MICOLISP_READ_SUCCESS){
       micolisp_cons *cons = micolisp_allocate_cons(value, list, machine);
       if (cons == NULL){ return 1; }
       if (micolisp_decrease(value, machine) != 0){ return 1; } 
@@ -1215,22 +1215,22 @@ static int micolisp_read_list (FILE *file, micolisp_machine *machine, void **val
       list = cons;
     }
     else 
-    if (status == MLISP_READ_CLOSE_PAREN){
+    if (status == MICOLISP_READ_CLOSE_PAREN){
       *valuep = list_nreverse(list);
       return 0;
     }
     else 
-    if (status == MLISP_READ_DOT){
+    if (status == MICOLISP_READ_DOT){
       void *value1;
       void *value2;
-      if (micolisp_read(file, machine, &value1) != MLISP_READ_SUCCESS){ return 1; }
-      if (micolisp_read(file, machine, &value2) != MLISP_READ_CLOSE_PAREN){ 
-        micolisp_error_set0(MLISP_SYNTAX_ERROR, "must exist close paren after value after dot.");
+      if (micolisp_read(file, machine, &value1) != MICOLISP_READ_SUCCESS){ return 1; }
+      if (micolisp_read(file, machine, &value2) != MICOLISP_READ_CLOSE_PAREN){ 
+        micolisp_error_set0(MICOLISP_SYNTAX_ERROR, "must exist close paren after value after dot.");
         return 1; 
       }
       micolisp_cons *lastcons = list;
       micolisp_cons *cons = list_nreverse(list);
-      if (micolisp_cons_set(value1, MLISP_CONS_CDR, lastcons, machine) != 0){ return 1; }
+      if (micolisp_cons_set(value1, MICOLISP_CONS_CDR, lastcons, machine) != 0){ return 1; }
       if (micolisp_decrease(value1, machine) != 0){ return 1; }
       *valuep = cons;
       return 0;
@@ -1246,7 +1246,7 @@ static int unescape (FILE *file, char *characterp){
   int character = getc(file);
   switch (character){
     case EOF: 
-      micolisp_error_set0(MLISP_SYNTAX_ERROR, "read eof.");
+      micolisp_error_set0(MICOLISP_SYNTAX_ERROR, "read eof.");
       return 1; 
     case '0': 
       *characterp = '\0'; 
@@ -1280,7 +1280,7 @@ static int unescape (FILE *file, char *characterp){
 
 static int micolisp_read_string (FILE *file, micolisp_machine *machine, void **valuep){
   if (getc(file) != '"'){ 
-    micolisp_error_set0(MLISP_SYNTAX_ERROR, "first character must be '\"'.");
+    micolisp_error_set0(MICOLISP_SYNTAX_ERROR, "first character must be '\"'.");
     return 1; 
   }
   micolisp_cons *list = NULL;
@@ -1345,11 +1345,11 @@ int micolisp_read (FILE *file, micolisp_machine *machine, void **valuep){
     }
     else 
     if (character == ')'){
-      return MLISP_READ_CLOSE_PAREN;
+      return MICOLISP_READ_CLOSE_PAREN;
     }
     else 
     if (character == '.'){
-      return MLISP_READ_DOT;
+      return MICOLISP_READ_DOT;
     }
     else 
     if (character == '\''){
@@ -1366,18 +1366,18 @@ int micolisp_read (FILE *file, micolisp_machine *machine, void **valuep){
       return micolisp_read_token(file, machine, valuep);
     }
     else {
-      return MLISP_READ_ERROR; 
+      return MICOLISP_READ_ERROR; 
     }
   }
-  return MLISP_READ_EOF;
+  return MICOLISP_READ_EOF;
 }
 
 int micolisp_eval (void *form, micolisp_machine *machine, void **valuep){
   void *formdereferenced;
   if (micolisp_reference_get(form, machine, &formdereferenced) != 0){ return 1; }
-  if (micolisp_typep(MLISP_CONS, formdereferenced, machine)){
+  if (micolisp_typep(MICOLISP_CONS, formdereferenced, machine)){
     if (!listp(formdereferenced, machine)){
-      micolisp_error_set0(MLISP_VALUE_ERROR, "formula is an incomplete list.");
+      micolisp_error_set0(MICOLISP_VALUE_ERROR, "formula is an incomplete list.");
       return 1;
     }
     void *function;
@@ -1388,12 +1388,12 @@ int micolisp_eval (void *form, micolisp_machine *machine, void **valuep){
       return 0;
     }
     else {
-      micolisp_error_set0(MLISP_VALUE_ERROR, "operator in formula is non function.");
+      micolisp_error_set0(MICOLISP_VALUE_ERROR, "operator in formula is non function.");
       return 1;
     }
   }
   else 
-  if (micolisp_typep(MLISP_SYMBOL, formdereferenced, machine)){
+  if (micolisp_typep(MICOLISP_SYMBOL, formdereferenced, machine)){
     void *value;
     if (micolisp_scope_get(formdereferenced, machine, &value) != 0){ return 1; }
     if (micolisp_increase(value, machine) != 0){ return 1; }
@@ -1410,16 +1410,16 @@ int micolisp_eval (void *form, micolisp_machine *machine, void **valuep){
 int micolisp_eval_string (char *sequence, size_t size, micolisp_machine *machine, void **valuep){
   FILE *file = tmpfile();
   if (file == NULL){ 
-    micolisp_error_set0(MLISP_INTERNAL_ERROR, "internal function tmpfile() was failed.");
+    micolisp_error_set0(MICOLISP_INTERNAL_ERROR, "internal function tmpfile() was failed.");
     return 1; 
   }
   size_t wrotesize = fwrite(sequence, sizeof(char), size, file);
   if (wrotesize < size){ 
-    micolisp_error_set0(MLISP_INTERNAL_ERROR, "internal function fwrite() was failed.");
+    micolisp_error_set0(MICOLISP_INTERNAL_ERROR, "internal function fwrite() was failed.");
     return 1; 
   }
   if (fseek(file, 0, SEEK_SET) != 0){ 
-    micolisp_error_set0(MLISP_INTERNAL_ERROR, "internal function fseek() was failed.");
+    micolisp_error_set0(MICOLISP_INTERNAL_ERROR, "internal function fseek() was failed.");
     return 1; 
   }
   void *value;
@@ -1427,7 +1427,7 @@ int micolisp_eval_string (char *sequence, size_t size, micolisp_machine *machine
   if (micolisp_eval(value, machine, valuep) != 0){ return 1; }
   if (micolisp_decrease(value, machine) != 0){ return 1; }
   if (fclose(file) != 0){ 
-    micolisp_error_set0(MLISP_INTERNAL_ERROR, "internal function fclose() was failed.");
+    micolisp_error_set0(MICOLISP_INTERNAL_ERROR, "internal function fclose() was failed.");
     return 1; 
   }
   return 0;
@@ -1440,7 +1440,7 @@ int micolisp_eval_string0 (char *sequence, micolisp_machine *machine, void **val
 
 static void print_error (FILE *file){
   int errorcode;
-  char errormessage[MLISP_ERROR_INFO_MAX_LENGTH];
+  char errormessage[MICOLISP_ERROR_INFO_MAX_LENGTH];
   micolisp_error_get(&errorcode, errormessage);
   fprintf(file, ">> REPL is aborted, because error was detected. <<\n");
   fprintf(file, ">> error code = %d: %s <<\n", errorcode, errormessage); 
@@ -1450,7 +1450,7 @@ int micolisp_repl (FILE *input, FILE *output, FILE *error, micolisp_machine *mac
   while (true){
     void *value;
     int status = micolisp_read(input, machine, &value);
-    if (status == MLISP_READ_SUCCESS){
+    if (status == MICOLISP_READ_SUCCESS){
       void *valueevaluated;
       if (micolisp_eval(value, machine, &valueevaluated) != 0){ print_error(error); return 1; }
       if (micolisp_println(valueevaluated, output, machine) != 0){ print_error(error); return 1; }
@@ -1458,18 +1458,18 @@ int micolisp_repl (FILE *input, FILE *output, FILE *error, micolisp_machine *mac
       if (micolisp_decrease(valueevaluated, machine) != 0){ print_error(error); return 1; }
     }
     else 
-    if (status == MLISP_READ_EOF){
+    if (status == MICOLISP_READ_EOF){
       return 0;
     }
     else 
-    if (status == MLISP_READ_DOT){
-      micolisp_error_set0(MLISP_ERROR, "read cons dot before open paren.");
+    if (status == MICOLISP_READ_DOT){
+      micolisp_error_set0(MICOLISP_ERROR, "read cons dot before open paren.");
       print_error(error);
       return 1;
     }
     else 
-    if (status == MLISP_READ_CLOSE_PAREN){
-      micolisp_error_set0(MLISP_ERROR, "read close paren before open paren.");
+    if (status == MICOLISP_READ_CLOSE_PAREN){
+      micolisp_error_set0(MICOLISP_ERROR, "read close paren before open paren.");
       print_error(error);
       return 1;
     }
@@ -1503,7 +1503,7 @@ static int try_define_function (micolisp_function_type type, micolisp_cons *args
   if (args == NULL){ return 1; }
   void *name = args->car;
   void *definations = args->cdr;
-  if (micolisp_typep(MLISP_SYMBOL, name, machine)){
+  if (micolisp_typep(MICOLISP_SYMBOL, name, machine)){
     void *function;
     if (make_function(type, definations, machine, &function) != 0){ return 1; }
     if (micolisp_scope_set(function, name, machine) != 0){ return 1; }
@@ -1516,15 +1516,15 @@ static int try_define_function (micolisp_function_type type, micolisp_cons *args
 }
 
 static int __micolisp_function (micolisp_cons *args, micolisp_machine *machine, void **valuep){
-  return try_define_function(MLISP_FUNCTION, args, machine, valuep);
+  return try_define_function(MICOLISP_FUNCTION, args, machine, valuep);
 }
 
 static int __micolisp_syntax (micolisp_cons *args, micolisp_machine *machine, void **valuep){
-  return try_define_function(MLISP_SYNTAX, args, machine, valuep);
+  return try_define_function(MICOLISP_SYNTAX, args, machine, valuep);
 }
 
 static int __micolisp_macro (micolisp_cons *args, micolisp_machine *machine, void **valuep){
-  return try_define_function(MLISP_MACRO, args, machine, valuep);
+  return try_define_function(MICOLISP_MACRO, args, machine, valuep);
 }
 
 static int __micolisp_progn (micolisp_cons *args, micolisp_machine *machine, void **valuep){
@@ -1580,7 +1580,7 @@ static int __micolisp_var (micolisp_cons *args, micolisp_machine *machine, void 
   if (list_nth(0, args, &name) != 0){ return 1; }
   if (list_nth(1, args, &form) != 0){ return 1; }
   if (micolisp_eval(form, machine, &formevaluated) != 0){ return 1; }
-  if (!micolisp_typep(MLISP_SYMBOL, name, machine)){ return 1; }
+  if (!micolisp_typep(MICOLISP_SYMBOL, name, machine)){ return 1; }
   if (micolisp_scope_set(formevaluated, name, machine) != 0){ return 1; }
   if (micolisp_increase(formevaluated, machine) != 0){ return 1; }
   *valuep = formevaluated;
@@ -1617,11 +1617,11 @@ static int __micolisp_symbol (micolisp_cons *args, micolisp_machine *machine, vo
   void *value;
   if (list_nth(0, args, &value) != 0){ return 1; }
   if (!listp(value, machine)){ return 1; }
-  char buffer[MLISP_SYMBOL_MAX_LENGTH];
+  char buffer[MICOLISP_SYMBOL_MAX_LENGTH];
   size_t index;
   micolisp_cons *cons;
   for (index = 0, cons = value; index < sizeof(buffer) && cons != NULL; index++, cons = cons->cdr){
-    if (!micolisp_typep(MLISP_NUMBER, cons->car, machine)){ return 1; }
+    if (!micolisp_typep(MICOLISP_NUMBER, cons->car, machine)){ return 1; }
     buffer[index] = (int)*(micolisp_number*)(cons->car);
   }
   micolisp_symbol *symbol = micolisp_allocate_symbol(buffer, index, machine);
@@ -1633,7 +1633,7 @@ static int __micolisp_symbol (micolisp_cons *args, micolisp_machine *machine, vo
 static int __micolisp_symbol_name (micolisp_cons *args, micolisp_machine *machine, void **valuep){
   void *symbol;
   if (list_nth(0, args, &symbol) != 0){ return 1; }
-  if (!micolisp_typep(MLISP_SYMBOL, symbol, machine)){ return 1; }
+  if (!micolisp_typep(MICOLISP_SYMBOL, symbol, machine)){ return 1; }
   micolisp_cons *list = NULL;
   for (size_t index = 0; index < ((micolisp_symbol*)symbol)->length; index++){
     micolisp_number *number = micolisp_allocate_number(machine);
@@ -1652,7 +1652,7 @@ static int __micolisp_symbol_name (micolisp_cons *args, micolisp_machine *machin
 static int __micolisp_symbol_value (micolisp_cons *args, micolisp_machine *machine, void **valuep){
   void *symbol;
   if (list_nth(0, args, &symbol) != 0){ return 1; }
-  if (!micolisp_typep(MLISP_SYMBOL, symbol, machine)){ return 1; }
+  if (!micolisp_typep(MICOLISP_SYMBOL, symbol, machine)){ return 1; }
   micolisp_scope_reference *reference = micolisp_scope_get_reference(symbol, machine);
   if (reference == NULL){ return 1; }
   *valuep = reference;
@@ -1685,8 +1685,8 @@ static int __micolisp_list (micolisp_cons *args, micolisp_machine *machine, void
 static int __micolisp_car (micolisp_cons *args, micolisp_machine *machine, void **valuep){
   void *cons;
   if (list_nth(0, args, &cons) != 0){ return 1; }
-  if (!micolisp_typep(MLISP_CONS, cons, machine)){ return 1; }
-  micolisp_cons_reference *reference = micolisp_cons_get_reference(MLISP_CONS_CAR, cons, machine);
+  if (!micolisp_typep(MICOLISP_CONS, cons, machine)){ return 1; }
+  micolisp_cons_reference *reference = micolisp_cons_get_reference(MICOLISP_CONS_CAR, cons, machine);
   if (reference == NULL){ return 1; }
   *valuep = reference;
   return 0;
@@ -1695,8 +1695,8 @@ static int __micolisp_car (micolisp_cons *args, micolisp_machine *machine, void 
 static int __micolisp_cdr (micolisp_cons *args, micolisp_machine *machine, void **valuep){
   void *cons;
   if (list_nth(0, args, &cons) != 0){ return 1; }
-  if (!micolisp_typep(MLISP_CONS, cons, machine)){ return 1; }
-  micolisp_cons_reference *reference = micolisp_cons_get_reference(MLISP_CONS_CDR, cons, machine);
+  if (!micolisp_typep(MICOLISP_CONS, cons, machine)){ return 1; }
+  micolisp_cons_reference *reference = micolisp_cons_get_reference(MICOLISP_CONS_CDR, cons, machine);
   if (reference == NULL){ return 1; }
   *valuep = reference;
   return 0;
@@ -1705,7 +1705,7 @@ static int __micolisp_cdr (micolisp_cons *args, micolisp_machine *machine, void 
 static int __micolisp_add (micolisp_cons *args, micolisp_machine *machine, void **valuep){
   micolisp_number result = 0;
   for (micolisp_cons *cons = args; cons != NULL; cons = cons->cdr){
-    if (!micolisp_typep(MLISP_NUMBER, cons->car, machine)){ return 1; }
+    if (!micolisp_typep(MICOLISP_NUMBER, cons->car, machine)){ return 1; }
     result += *(micolisp_number*)(cons->car);
   }
   micolisp_number *resultp = micolisp_allocate_number(machine);
@@ -1717,10 +1717,10 @@ static int __micolisp_add (micolisp_cons *args, micolisp_machine *machine, void 
 
 static int __micolisp_sub (micolisp_cons *args, micolisp_machine *machine, void **valuep){
   if (args != NULL){
-    if (!micolisp_typep(MLISP_NUMBER, args->car, machine)){ return 1; }
+    if (!micolisp_typep(MICOLISP_NUMBER, args->car, machine)){ return 1; }
     micolisp_number result = *(micolisp_number*)(args->car);
     for (micolisp_cons *cons = args->cdr; cons != NULL; cons = cons->cdr){
-      if (!micolisp_typep(MLISP_NUMBER, cons->car, machine)){ return 1; }
+      if (!micolisp_typep(MICOLISP_NUMBER, cons->car, machine)){ return 1; }
       result -= *(micolisp_number*)(cons->car);
     }
     micolisp_number *resultp = micolisp_allocate_number(machine);
@@ -1736,10 +1736,10 @@ static int __micolisp_sub (micolisp_cons *args, micolisp_machine *machine, void 
 
 static int __micolisp_mul (micolisp_cons *args, micolisp_machine *machine, void **valuep){
   if (args != NULL){
-    if (!micolisp_typep(MLISP_NUMBER, args->car, machine)){ return 1; }
+    if (!micolisp_typep(MICOLISP_NUMBER, args->car, machine)){ return 1; }
     micolisp_number result = *(micolisp_number*)(args->car);
     for (micolisp_cons *cons = args->cdr; cons != NULL; cons = cons->cdr){
-      if (!micolisp_typep(MLISP_NUMBER, cons->car, machine)){ return 1; }
+      if (!micolisp_typep(MICOLISP_NUMBER, cons->car, machine)){ return 1; }
       result *= *(micolisp_number*)(cons->car);
     }
     micolisp_number *resultp = micolisp_allocate_number(machine);
@@ -1755,10 +1755,10 @@ static int __micolisp_mul (micolisp_cons *args, micolisp_machine *machine, void 
 
 static int __micolisp_div (micolisp_cons *args, micolisp_machine *machine, void **valuep){
   if (args != NULL){
-    if (!micolisp_typep(MLISP_NUMBER, args->car, machine)){ return 1; }
+    if (!micolisp_typep(MICOLISP_NUMBER, args->car, machine)){ return 1; }
     micolisp_number result = *(micolisp_number*)(args->car);
     for (micolisp_cons *cons = args->cdr; cons != NULL; cons = cons->cdr){
-      if (!micolisp_typep(MLISP_NUMBER, cons->car, machine)){ return 1; }
+      if (!micolisp_typep(MICOLISP_NUMBER, cons->car, machine)){ return 1; }
       result /= *(micolisp_number*)(cons->car);
     }
     micolisp_number *resultp = micolisp_allocate_number(machine);
@@ -1774,10 +1774,10 @@ static int __micolisp_div (micolisp_cons *args, micolisp_machine *machine, void 
 
 static int __micolisp_mod (micolisp_cons *args, micolisp_machine *machine, void **valuep){
   if (args != NULL){
-    if (!micolisp_typep(MLISP_NUMBER, args->car, machine)){ return 1; }
+    if (!micolisp_typep(MICOLISP_NUMBER, args->car, machine)){ return 1; }
     micolisp_number result = *(micolisp_number*)(args->car);
     for (micolisp_cons *cons = args->cdr; cons != NULL; cons = cons->cdr){
-      if (!micolisp_typep(MLISP_NUMBER, cons->car, machine)){ return 1; }
+      if (!micolisp_typep(MICOLISP_NUMBER, cons->car, machine)){ return 1; }
       result = result - floor(result / *(micolisp_number*)(cons->car));
     }
     micolisp_number *resultp = micolisp_allocate_number(machine);
@@ -1796,8 +1796,8 @@ static int __micolisp_lshift (micolisp_cons *args, micolisp_machine *machine, vo
   void *value2;
   if (list_nth(0, args, &value1) != 0){ return 1; }
   if (list_nth(1, args, &value2) != 0){ return 1; }
-  if (!micolisp_typep(MLISP_NUMBER, value1, machine)){ return 1; }
-  if (!micolisp_typep(MLISP_NUMBER, value2, machine)){ return 1; }
+  if (!micolisp_typep(MICOLISP_NUMBER, value1, machine)){ return 1; }
+  if (!micolisp_typep(MICOLISP_NUMBER, value2, machine)){ return 1; }
   double integerpart1;
   double decimalpart1 = modf(*(micolisp_number*)value1, &integerpart1);
   double integerpart2;
@@ -1819,8 +1819,8 @@ static int __micolisp_rshift (micolisp_cons *args, micolisp_machine *machine, vo
   void *value2;
   if (list_nth(0, args, &value1) != 0){ return 1; }
   if (list_nth(1, args, &value2) != 0){ return 1; }
-  if (!micolisp_typep(MLISP_NUMBER, value1, machine)){ return 1; }
-  if (!micolisp_typep(MLISP_NUMBER, value2, machine)){ return 1; }
+  if (!micolisp_typep(MICOLISP_NUMBER, value1, machine)){ return 1; }
+  if (!micolisp_typep(MICOLISP_NUMBER, value2, machine)){ return 1; }
   double integerpart1;
   double decimalpart1 = modf(*(micolisp_number*)value1, &integerpart1);
   double integerpart2;
@@ -1842,8 +1842,8 @@ static int __micolisp_log_rshift (micolisp_cons *args, micolisp_machine *machine
   void *value2;
   if (list_nth(0, args, &value1) != 0){ return 1; }
   if (list_nth(1, args, &value2) != 0){ return 1; }
-  if (!micolisp_typep(MLISP_NUMBER, value1, machine)){ return 1; }
-  if (!micolisp_typep(MLISP_NUMBER, value2, machine)){ return 1; }
+  if (!micolisp_typep(MICOLISP_NUMBER, value1, machine)){ return 1; }
+  if (!micolisp_typep(MICOLISP_NUMBER, value2, machine)){ return 1; }
   double integerpart1;
   double decimalpart1 = modf(*(micolisp_number*)value1, &integerpart1);
   double integerpart2;
@@ -1863,7 +1863,7 @@ static int __micolisp_log_rshift (micolisp_cons *args, micolisp_machine *machine
 static int __micolisp_log_not (micolisp_cons *args, micolisp_machine *machine, void **valuep){
   void *value;
   if (list_nth(0, args, &value) != 0){ return 1; }
-  if (!micolisp_typep(MLISP_NUMBER, value, machine)){ return 1; }
+  if (!micolisp_typep(MICOLISP_NUMBER, value, machine)){ return 1; }
   double integerpart;
   double decimalpart = modf(*(micolisp_number*)value, &integerpart);
   if (abs(decimalpart) <= 0.0){
@@ -1883,8 +1883,8 @@ static int __micolisp_log_and (micolisp_cons *args, micolisp_machine *machine, v
   void *value2;
   if (list_nth(0, args, &value1) != 0){ return 1; }
   if (list_nth(1, args, &value2) != 0){ return 1; }
-  if (!micolisp_typep(MLISP_NUMBER, value1, machine)){ return 1; }
-  if (!micolisp_typep(MLISP_NUMBER, value2, machine)){ return 1; }
+  if (!micolisp_typep(MICOLISP_NUMBER, value1, machine)){ return 1; }
+  if (!micolisp_typep(MICOLISP_NUMBER, value2, machine)){ return 1; }
   double integerpart1;
   double decimalpart1 = modf(*(micolisp_number*)value1, &integerpart1);
   double integerpart2;
@@ -1906,8 +1906,8 @@ static int __micolisp_log_or (micolisp_cons *args, micolisp_machine *machine, vo
   void *value2;
   if (list_nth(0, args, &value1) != 0){ return 1; }
   if (list_nth(1, args, &value2) != 0){ return 1; }
-  if (!micolisp_typep(MLISP_NUMBER, value1, machine)){ return 1; }
-  if (!micolisp_typep(MLISP_NUMBER, value2, machine)){ return 1; }
+  if (!micolisp_typep(MICOLISP_NUMBER, value1, machine)){ return 1; }
+  if (!micolisp_typep(MICOLISP_NUMBER, value2, machine)){ return 1; }
   double integerpart1;
   double decimalpart1 = modf(*(micolisp_number*)value1, &integerpart1);
   double integerpart2;
@@ -1929,8 +1929,8 @@ static int __micolisp_log_xor (micolisp_cons *args, micolisp_machine *machine, v
   void *value2;
   if (list_nth(0, args, &value1) != 0){ return 1; }
   if (list_nth(1, args, &value2) != 0){ return 1; }
-  if (!micolisp_typep(MLISP_NUMBER, value1, machine)){ return 1; }
-  if (!micolisp_typep(MLISP_NUMBER, value2, machine)){ return 1; }
+  if (!micolisp_typep(MICOLISP_NUMBER, value1, machine)){ return 1; }
+  if (!micolisp_typep(MICOLISP_NUMBER, value2, machine)){ return 1; }
   double integerpart1;
   double decimalpart1 = modf(*(micolisp_number*)value1, &integerpart1);
   double integerpart2;
@@ -1950,7 +1950,7 @@ static int __micolisp_log_xor (micolisp_cons *args, micolisp_machine *machine, v
 static int __micolisp_floor (micolisp_cons *args, micolisp_machine *machine, void **valuep){
   void *number;
   if (list_nth(0, args, &number) != 0){ return 1; }
-  if (!micolisp_typep(MLISP_NUMBER, number, machine)){ return 1; }
+  if (!micolisp_typep(MICOLISP_NUMBER, number, machine)){ return 1; }
   micolisp_number *newnumber = micolisp_allocate_number(machine);
   if (newnumber == NULL){ return 1; }
   *newnumber = floor(*(micolisp_number*)number);
@@ -1961,7 +1961,7 @@ static int __micolisp_floor (micolisp_cons *args, micolisp_machine *machine, voi
 static int __micolisp_ceil (micolisp_cons *args, micolisp_machine *machine, void **valuep){
   void *number;
   if (list_nth(0, args, &number) != 0){ return 1; }
-  if (!micolisp_typep(MLISP_NUMBER, number, machine)){ return 1; }
+  if (!micolisp_typep(MICOLISP_NUMBER, number, machine)){ return 1; }
   micolisp_number *newnumber = micolisp_allocate_number(machine);
   if (newnumber == NULL){ return 1; }
   *newnumber = ceil(*(micolisp_number*)number);
@@ -1972,7 +1972,7 @@ static int __micolisp_ceil (micolisp_cons *args, micolisp_machine *machine, void
 static int __micolisp_round (micolisp_cons *args, micolisp_machine *machine, void **valuep){
   void *number;
   if (list_nth(0, args, &number) != 0){ return 1; }
-  if (!micolisp_typep(MLISP_NUMBER, number, machine)){ return 1; }
+  if (!micolisp_typep(MICOLISP_NUMBER, number, machine)){ return 1; }
   micolisp_number *newnumber = micolisp_allocate_number(machine);
   if (newnumber == NULL){ return 1; }
   *newnumber = round(*(micolisp_number*)number);
@@ -1987,11 +1987,11 @@ static bool equal_cons (micolisp_cons *cons1, micolisp_cons *cons2, micolisp_mac
 }
 
 static bool equal (void *value1, void *value2, micolisp_machine *machine){
-  if (micolisp_typep(MLISP_NUMBER, value1, machine) && micolisp_typep(MLISP_NUMBER, value2, machine)){
+  if (micolisp_typep(MICOLISP_NUMBER, value1, machine) && micolisp_typep(MICOLISP_NUMBER, value2, machine)){
     return *(micolisp_number*)value1 == *(micolisp_number*)value2;
   }
   else 
-  if (micolisp_typep(MLISP_CONS, value1, machine) && micolisp_typep(MLISP_CONS, value2, machine)){
+  if (micolisp_typep(MICOLISP_CONS, value1, machine) && micolisp_typep(MICOLISP_CONS, value2, machine)){
     return equal_cons(value1, value2, machine);
   }
   else {
@@ -2004,11 +2004,11 @@ static int __micolisp_equal (micolisp_cons *args, micolisp_machine *machine, voi
     void *first = args->car;
     for (micolisp_cons *cons = args->cdr; cons != NULL; cons = cons->cdr){
       if (!equal(first, cons->car, machine)){
-        *valuep = MLISP_NIL;
+        *valuep = MICOLISP_NIL;
         return 0;
       }
     }
-    *valuep = MLISP_T;
+    *valuep = MICOLISP_T;
     return 0;
   }
   else {
@@ -2019,21 +2019,21 @@ static int __micolisp_equal (micolisp_cons *args, micolisp_machine *machine, voi
 static int __micolisp_unequal (micolisp_cons *args, micolisp_machine *machine, void **valuep){
   void *value;
   if (__micolisp_equal(args, machine, &value) != 0){ return 1; }
-  *valuep = value != MLISP_NIL? MLISP_NIL: MLISP_T;
+  *valuep = value != MICOLISP_NIL? MICOLISP_NIL: MICOLISP_T;
   return 0;
 }
 
 static int __micolisp_less (micolisp_cons *args, micolisp_machine *machine, void **valuep){
   if (args != NULL){
-    if (!micolisp_typep(MLISP_NUMBER, args->car, machine)){ return 1; }
+    if (!micolisp_typep(MICOLISP_NUMBER, args->car, machine)){ return 1; }
     for (micolisp_cons *cons = args->cdr; cons != NULL; cons = cons->cdr){
-      if (!micolisp_typep(MLISP_NUMBER, cons->car, machine)){ return 1; }
+      if (!micolisp_typep(MICOLISP_NUMBER, cons->car, machine)){ return 1; }
       if (!(*(micolisp_number*)(args->car) < *(micolisp_number*)(cons->car))){
-        *valuep = MLISP_NIL;
+        *valuep = MICOLISP_NIL;
         return 0;
       }
     }
-    *valuep = MLISP_T;
+    *valuep = MICOLISP_T;
     return 0;
   }
   else {
@@ -2043,15 +2043,15 @@ static int __micolisp_less (micolisp_cons *args, micolisp_machine *machine, void
 
 static int __micolisp_less_or_equal (micolisp_cons *args, micolisp_machine *machine, void **valuep){
   if (args != NULL){
-    if (!micolisp_typep(MLISP_NUMBER, args->car, machine)){ return 1; }
+    if (!micolisp_typep(MICOLISP_NUMBER, args->car, machine)){ return 1; }
     for (micolisp_cons *cons = args->cdr; cons != NULL; cons = cons->cdr){
-      if (!micolisp_typep(MLISP_NUMBER, cons->car, machine)){ return 1; }
+      if (!micolisp_typep(MICOLISP_NUMBER, cons->car, machine)){ return 1; }
       if (!(*(micolisp_number*)(args->car) <= *(micolisp_number*)(cons->car))){
-        *valuep = MLISP_NIL;
+        *valuep = MICOLISP_NIL;
         return 0;
       }
     }
-    *valuep = MLISP_T;
+    *valuep = MICOLISP_T;
     return 0;
   }
   else {
@@ -2061,15 +2061,15 @@ static int __micolisp_less_or_equal (micolisp_cons *args, micolisp_machine *mach
 
 static int __micolisp_great (micolisp_cons *args, micolisp_machine *machine, void **valuep){
   if (args != NULL){
-    if (!micolisp_typep(MLISP_NUMBER, args->car, machine)){ return 1; }
+    if (!micolisp_typep(MICOLISP_NUMBER, args->car, machine)){ return 1; }
     for (micolisp_cons *cons = args->cdr; cons != NULL; cons = cons->cdr){
-      if (!micolisp_typep(MLISP_NUMBER, cons->car, machine)){ return 1; }
+      if (!micolisp_typep(MICOLISP_NUMBER, cons->car, machine)){ return 1; }
       if (!(*(micolisp_number*)(args->car) > *(micolisp_number*)(cons->car))){
-        *valuep = MLISP_NIL;
+        *valuep = MICOLISP_NIL;
         return 0;
       }
     }
-    *valuep = MLISP_T;
+    *valuep = MICOLISP_T;
     return 0;
   }
   else {
@@ -2079,15 +2079,15 @@ static int __micolisp_great (micolisp_cons *args, micolisp_machine *machine, voi
 
 static int __micolisp_great_or_equal (micolisp_cons *args, micolisp_machine *machine, void **valuep){
   if (args != NULL){
-    if (!micolisp_typep(MLISP_NUMBER, args->car, machine)){ return 1; }
+    if (!micolisp_typep(MICOLISP_NUMBER, args->car, machine)){ return 1; }
     for (micolisp_cons *cons = args->cdr; cons != NULL; cons = cons->cdr){
-      if (!micolisp_typep(MLISP_NUMBER, cons->car, machine)){ return 1; }
+      if (!micolisp_typep(MICOLISP_NUMBER, cons->car, machine)){ return 1; }
       if (!(*(micolisp_number*)(args->car) >= *(micolisp_number*)(cons->car))){
-        *valuep = MLISP_NIL;
+        *valuep = MICOLISP_NIL;
         return 0;
       }
     }
-    *valuep = MLISP_T;
+    *valuep = MICOLISP_T;
     return 0;
   }
   else {
@@ -2098,35 +2098,35 @@ static int __micolisp_great_or_equal (micolisp_cons *args, micolisp_machine *mac
 static int __micolisp_numberp (micolisp_cons *args, micolisp_machine *machine, void **valuep){
   void *value;
   if (list_nth(0, args, &value) != 0){ return 1; }
-  *valuep = micolisp_typep(MLISP_NUMBER, value, machine)? MLISP_T: MLISP_NIL;
+  *valuep = micolisp_typep(MICOLISP_NUMBER, value, machine)? MICOLISP_T: MICOLISP_NIL;
   return 0;
 }
 
 static int __micolisp_symbolp (micolisp_cons *args, micolisp_machine *machine, void **valuep){
   void *value;
   if (list_nth(0, args, &value) != 0){ return 1; }
-  *valuep = micolisp_typep(MLISP_SYMBOL, value, machine)? MLISP_T: MLISP_NIL;
+  *valuep = micolisp_typep(MICOLISP_SYMBOL, value, machine)? MICOLISP_T: MICOLISP_NIL;
   return 0;
 }
 
 static int __micolisp_functionp (micolisp_cons *args, micolisp_machine *machine, void **valuep){
   void *value;
   if (list_nth(0, args, &value) != 0){ return 1; }
-  *valuep = micolisp_functionp(value, machine)? MLISP_T: MLISP_NIL;
+  *valuep = micolisp_functionp(value, machine)? MICOLISP_T: MICOLISP_NIL;
   return 0;
 }
 
 static int __micolisp_consp (micolisp_cons *args, micolisp_machine *machine, void **valuep){
   void *value;
   if (list_nth(0, args, &value) != 0){ return 1; }
-  *valuep = micolisp_typep(MLISP_CONS, value, machine)? MLISP_T: MLISP_NIL;
+  *valuep = micolisp_typep(MICOLISP_CONS, value, machine)? MICOLISP_T: MICOLISP_NIL;
   return 0;
 }
 
 static int __micolisp_listp (micolisp_cons *args, micolisp_machine *machine, void **valuep){
   void *value;
   if (list_nth(0, args, &value) != 0){ return 1; }
-  *valuep = listp(value, machine)? MLISP_T: MLISP_NIL;
+  *valuep = listp(value, machine)? MICOLISP_T: MICOLISP_NIL;
   return 0;
 }
 
@@ -2142,7 +2142,7 @@ static int __micolisp_read_string (micolisp_cons *args, micolisp_machine *machin
   if (1 <= list_length(args)){
     void *size;
     if (list_nth(0, args, &size) != 0){ return 1; }
-    if (!micolisp_typep(MLISP_NUMBER, size, machine)){ return 1; }
+    if (!micolisp_typep(MICOLISP_NUMBER, size, machine)){ return 1; }
     readsize = *(micolisp_number*)size;
   }
   else {
@@ -2174,7 +2174,7 @@ static int __micolisp_read_line (micolisp_cons *args, micolisp_machine *machine,
   if (1 <= list_length(args)){
     void *size;
     if (list_nth(0, args, &size) != 0){ return 1; }
-    if (!micolisp_typep(MLISP_NUMBER, size, machine)){ return 1; }
+    if (!micolisp_typep(MICOLISP_NUMBER, size, machine)){ return 1; }
     readsize = *(micolisp_number*)size;
   }
   else {
@@ -2222,7 +2222,7 @@ static int __micolisp_eval_string (micolisp_cons *args, micolisp_machine *machin
   size_t index;
   micolisp_cons *cons;
   for (index = 0, cons = list; index < length && cons != NULL; index++, cons = cons->cdr){
-    if (!micolisp_typep(MLISP_NUMBER, cons->car, machine)){ return 1; }
+    if (!micolisp_typep(MICOLISP_NUMBER, cons->car, machine)){ return 1; }
     buffer[index] = *(micolisp_number*)(cons->car);
   }
   return micolisp_eval_string(buffer, length, machine, valuep);
@@ -2249,12 +2249,12 @@ static int __micolisp_println (micolisp_cons *args, micolisp_machine *machine, v
 static int __micolisp_write (micolisp_cons *args, micolisp_machine *machine, void **valuep){
   void *list;
   if (list_nth(0, args, &list) != 0){ return 1; }
-  if (!micolisp_typep(MLISP_CONS, list, machine)){ return 1; }
+  if (!micolisp_typep(MICOLISP_CONS, list, machine)){ return 1; }
   for (micolisp_cons *cons = list; cons != NULL; cons = cons->cdr){
     void *consdereferenced;
     if (micolisp_reference_get(cons, machine, &consdereferenced) != 0){ return 1; }
-    if (!micolisp_typep(MLISP_CONS, consdereferenced, machine)){ return 1; }
-    if (!micolisp_typep(MLISP_NUMBER, ((micolisp_cons*)consdereferenced)->car, machine)){ return 1; }
+    if (!micolisp_typep(MICOLISP_CONS, consdereferenced, machine)){ return 1; }
+    if (!micolisp_typep(MICOLISP_NUMBER, ((micolisp_cons*)consdereferenced)->car, machine)){ return 1; }
     putchar((int)*(micolisp_number*)((micolisp_cons*)consdereferenced)->car);
   }
   return 0;
@@ -2271,13 +2271,13 @@ static int __micolisp_error (micolisp_cons *args, micolisp_machine *machine, voi
   void *errormessage;
   if (list_nth(0, args, &errorcode) != 0){ return 1; }
   if (list_nth(1, args, &errormessage) != 0){ return 1; }
-  if (!micolisp_typep(MLISP_NUMBER, errorcode, machine)){ return 1; }
+  if (!micolisp_typep(MICOLISP_NUMBER, errorcode, machine)){ return 1; }
   if (!listp(errormessage, machine)){ return 1; }
-  char buffer[MLISP_ERROR_INFO_MAX_LENGTH];
+  char buffer[MICOLISP_ERROR_INFO_MAX_LENGTH];
   size_t index;
   micolisp_cons *cons;
-  for (index = 0, cons = errormessage; index < MLISP_ERROR_INFO_MAX_LENGTH && cons != NULL; index++, cons = cons->cdr){
-    if (!micolisp_typep(MLISP_NUMBER, cons->car, machine)){ return 1; }
+  for (index = 0, cons = errormessage; index < MICOLISP_ERROR_INFO_MAX_LENGTH && cons != NULL; index++, cons = cons->cdr){
+    if (!micolisp_typep(MICOLISP_NUMBER, cons->car, machine)){ return 1; }
     buffer[index] = *(micolisp_number*)(cons->car);
   }
   micolisp_error_set(*(micolisp_number*)errorcode, buffer, index);
@@ -2291,7 +2291,7 @@ static int setup_builtin_syntax (micolisp_machine *machine){
   {
     micolisp_symbol *symbol = micolisp_allocate_symbol0("function", machine);
     if (symbol == NULL){ return 1; }
-    micolisp_c_function *function = micolisp_allocate_c_function(MLISP_SYNTAX, __micolisp_function, machine);
+    micolisp_c_function *function = micolisp_allocate_c_function(MICOLISP_SYNTAX, __micolisp_function, machine);
     if (function == NULL){ return 1; }
     if (micolisp_scope_set(function, symbol, machine) != 0){ return 1; }
     if (micolisp_decrease(symbol, machine) != 0){ return 1; }
@@ -2301,7 +2301,7 @@ static int setup_builtin_syntax (micolisp_machine *machine){
   {
     micolisp_symbol *symbol = micolisp_allocate_symbol0("syntax", machine);
     if (symbol == NULL){ return 1; }
-    micolisp_c_function *function = micolisp_allocate_c_function(MLISP_SYNTAX, __micolisp_syntax, machine);
+    micolisp_c_function *function = micolisp_allocate_c_function(MICOLISP_SYNTAX, __micolisp_syntax, machine);
     if (function == NULL){ return 1; }
     if (micolisp_scope_set(function, symbol, machine) != 0){ return 1; }
     if (micolisp_decrease(symbol, machine) != 0){ return 1; }
@@ -2311,7 +2311,7 @@ static int setup_builtin_syntax (micolisp_machine *machine){
   {
     micolisp_symbol *symbol = micolisp_allocate_symbol0("macro", machine);
     if (symbol == NULL){ return 1; }
-    micolisp_c_function *function = micolisp_allocate_c_function(MLISP_SYNTAX, __micolisp_macro, machine);
+    micolisp_c_function *function = micolisp_allocate_c_function(MICOLISP_SYNTAX, __micolisp_macro, machine);
     if (function == NULL){ return 1; }
     if (micolisp_scope_set(function, symbol, machine) != 0){ return 1; }
     if (micolisp_decrease(symbol, machine) != 0){ return 1; }
@@ -2321,7 +2321,7 @@ static int setup_builtin_syntax (micolisp_machine *machine){
   {
     micolisp_symbol *symbol = micolisp_allocate_symbol0("progn", machine);
     if (symbol == NULL){ return 1; }
-    micolisp_c_function *function = micolisp_allocate_c_function(MLISP_SYNTAX, __micolisp_progn, machine);
+    micolisp_c_function *function = micolisp_allocate_c_function(MICOLISP_SYNTAX, __micolisp_progn, machine);
     if (function == NULL){ return 1; }
     if (micolisp_scope_set(function, symbol, machine) != 0){ return 1; }
     if (micolisp_decrease(symbol, machine) != 0){ return 1; }
@@ -2331,7 +2331,7 @@ static int setup_builtin_syntax (micolisp_machine *machine){
   {
     micolisp_symbol *symbol = micolisp_allocate_symbol0("if", machine);
     if (symbol == NULL){ return 1; }
-    micolisp_c_function *function = micolisp_allocate_c_function(MLISP_SYNTAX, __micolisp_if, machine);
+    micolisp_c_function *function = micolisp_allocate_c_function(MICOLISP_SYNTAX, __micolisp_if, machine);
     if (function == NULL){ return 1; }
     if (micolisp_scope_set(function, symbol, machine) != 0){ return 1; }
     if (micolisp_decrease(symbol, machine) != 0){ return 1; }
@@ -2341,7 +2341,7 @@ static int setup_builtin_syntax (micolisp_machine *machine){
   {
     micolisp_symbol *symbol = micolisp_allocate_symbol0("while", machine);
     if (symbol == NULL){ return 1; }
-    micolisp_c_function *function = micolisp_allocate_c_function(MLISP_SYNTAX, __micolisp_while, machine);
+    micolisp_c_function *function = micolisp_allocate_c_function(MICOLISP_SYNTAX, __micolisp_while, machine);
     if (function == NULL){ return 1; }
     if (micolisp_scope_set(function, symbol, machine) != 0){ return 1; }
     if (micolisp_decrease(symbol, machine) != 0){ return 1; }
@@ -2351,7 +2351,7 @@ static int setup_builtin_syntax (micolisp_machine *machine){
   {
     micolisp_symbol *symbol = micolisp_allocate_symbol0("set", machine);
     if (symbol == NULL){ return 1; }
-    micolisp_c_function *function = micolisp_allocate_c_function(MLISP_SYNTAX, __micolisp_set, machine);
+    micolisp_c_function *function = micolisp_allocate_c_function(MICOLISP_SYNTAX, __micolisp_set, machine);
     if (function == NULL){ return 1; }
     if (micolisp_scope_set(function, symbol, machine) != 0){ return 1; }
     if (micolisp_decrease(symbol, machine) != 0){ return 1; }
@@ -2361,7 +2361,7 @@ static int setup_builtin_syntax (micolisp_machine *machine){
   {
     micolisp_symbol *symbol = micolisp_allocate_symbol0("var", machine);
     if (symbol == NULL){ return 1; }
-    micolisp_c_function *function = micolisp_allocate_c_function(MLISP_SYNTAX, __micolisp_var, machine);
+    micolisp_c_function *function = micolisp_allocate_c_function(MICOLISP_SYNTAX, __micolisp_var, machine);
     if (function == NULL){ return 1; }
     if (micolisp_scope_set(function, symbol, machine) != 0){ return 1; }
     if (micolisp_decrease(symbol, machine) != 0){ return 1; }
@@ -2371,7 +2371,7 @@ static int setup_builtin_syntax (micolisp_machine *machine){
   {
     micolisp_symbol *symbol = micolisp_allocate_symbol0("quote", machine);
     if (symbol == NULL){ return 1; }
-    micolisp_c_function *function = micolisp_allocate_c_function(MLISP_SYNTAX, __micolisp_quote, machine);
+    micolisp_c_function *function = micolisp_allocate_c_function(MICOLISP_SYNTAX, __micolisp_quote, machine);
     if (function == NULL){ return 1; }
     if (micolisp_scope_set(function, symbol, machine) != 0){ return 1; }
     if (micolisp_decrease(symbol, machine) != 0){ return 1; }
@@ -2387,7 +2387,7 @@ static int setup_builtin_function (micolisp_machine *machine){
   {
     micolisp_symbol *symbol = micolisp_allocate_symbol0("symbol", machine);
     if (symbol == NULL){ return 1; }
-    micolisp_c_function *function = micolisp_allocate_c_function(MLISP_FUNCTION, __micolisp_symbol, machine);
+    micolisp_c_function *function = micolisp_allocate_c_function(MICOLISP_FUNCTION, __micolisp_symbol, machine);
     if (function == NULL){ return 1; }
     if (micolisp_scope_set(function, symbol, machine) != 0){ return 1; }
     if (micolisp_decrease(symbol, machine) != 0){ return 1; }
@@ -2397,7 +2397,7 @@ static int setup_builtin_function (micolisp_machine *machine){
   {
     micolisp_symbol *symbol = micolisp_allocate_symbol0("symbol-name", machine);
     if (symbol == NULL){ return 1; }
-    micolisp_c_function *function = micolisp_allocate_c_function(MLISP_FUNCTION, __micolisp_symbol_name, machine);
+    micolisp_c_function *function = micolisp_allocate_c_function(MICOLISP_FUNCTION, __micolisp_symbol_name, machine);
     if (function == NULL){ return 1; }
     if (micolisp_scope_set(function, symbol, machine) != 0){ return 1; }
     if (micolisp_decrease(symbol, machine) != 0){ return 1; }
@@ -2407,7 +2407,7 @@ static int setup_builtin_function (micolisp_machine *machine){
   {
     micolisp_symbol *symbol = micolisp_allocate_symbol0("symbol-value", machine);
     if (symbol == NULL){ return 1; }
-    micolisp_c_function *function = micolisp_allocate_c_function(MLISP_FUNCTION, __micolisp_symbol_value, machine);
+    micolisp_c_function *function = micolisp_allocate_c_function(MICOLISP_FUNCTION, __micolisp_symbol_value, machine);
     if (function == NULL){ return 1; }
     if (micolisp_scope_set(function, symbol, machine) != 0){ return 1; }
     if (micolisp_decrease(symbol, machine) != 0){ return 1; }
@@ -2417,7 +2417,7 @@ static int setup_builtin_function (micolisp_machine *machine){
   {
     micolisp_symbol *symbol = micolisp_allocate_symbol0("cons", machine);
     if (symbol == NULL){ return 1; }
-    micolisp_c_function *function = micolisp_allocate_c_function(MLISP_FUNCTION, __micolisp_cons, machine);
+    micolisp_c_function *function = micolisp_allocate_c_function(MICOLISP_FUNCTION, __micolisp_cons, machine);
     if (function == NULL){ return 1; }
     if (micolisp_scope_set(function, symbol, machine) != 0){ return 1; }
     if (micolisp_decrease(symbol, machine) != 0){ return 1; }
@@ -2427,7 +2427,7 @@ static int setup_builtin_function (micolisp_machine *machine){
   {
     micolisp_symbol *symbol = micolisp_allocate_symbol0("list", machine);
     if (symbol == NULL){ return 1; }
-    micolisp_c_function *function = micolisp_allocate_c_function(MLISP_FUNCTION, __micolisp_list, machine);
+    micolisp_c_function *function = micolisp_allocate_c_function(MICOLISP_FUNCTION, __micolisp_list, machine);
     if (function == NULL){ return 1; }
     if (micolisp_scope_set(function, symbol, machine) != 0){ return 1; }
     if (micolisp_decrease(symbol, machine) != 0){ return 1; }
@@ -2437,7 +2437,7 @@ static int setup_builtin_function (micolisp_machine *machine){
   {
     micolisp_symbol *symbol = micolisp_allocate_symbol0("car", machine);
     if (symbol == NULL){ return 1; }
-    micolisp_c_function *function = micolisp_allocate_c_function(MLISP_FUNCTION, __micolisp_car, machine);
+    micolisp_c_function *function = micolisp_allocate_c_function(MICOLISP_FUNCTION, __micolisp_car, machine);
     if (function == NULL){ return 1; }
     if (micolisp_scope_set(function, symbol, machine) != 0){ return 1; }
     if (micolisp_decrease(symbol, machine) != 0){ return 1; }
@@ -2447,7 +2447,7 @@ static int setup_builtin_function (micolisp_machine *machine){
   {
     micolisp_symbol *symbol = micolisp_allocate_symbol0("cdr", machine);
     if (symbol == NULL){ return 1; }
-    micolisp_c_function *function = micolisp_allocate_c_function(MLISP_FUNCTION, __micolisp_cdr, machine);
+    micolisp_c_function *function = micolisp_allocate_c_function(MICOLISP_FUNCTION, __micolisp_cdr, machine);
     if (function == NULL){ return 1; }
     if (micolisp_scope_set(function, symbol, machine) != 0){ return 1; }
     if (micolisp_decrease(symbol, machine) != 0){ return 1; }
@@ -2457,7 +2457,7 @@ static int setup_builtin_function (micolisp_machine *machine){
   {
     micolisp_symbol *symbol = micolisp_allocate_symbol0("+", machine);
     if (symbol == NULL){ return 1; }
-    micolisp_c_function *function = micolisp_allocate_c_function(MLISP_FUNCTION, __micolisp_add, machine);
+    micolisp_c_function *function = micolisp_allocate_c_function(MICOLISP_FUNCTION, __micolisp_add, machine);
     if (function == NULL){ return 1; }
     if (micolisp_scope_set(function, symbol, machine) != 0){ return 1; }
     if (micolisp_decrease(symbol, machine) != 0){ return 1; }
@@ -2467,7 +2467,7 @@ static int setup_builtin_function (micolisp_machine *machine){
   {
     micolisp_symbol *symbol = micolisp_allocate_symbol0("-", machine);
     if (symbol == NULL){ return 1; }
-    micolisp_c_function *function = micolisp_allocate_c_function(MLISP_FUNCTION, __micolisp_sub, machine);
+    micolisp_c_function *function = micolisp_allocate_c_function(MICOLISP_FUNCTION, __micolisp_sub, machine);
     if (function == NULL){ return 1; }
     if (micolisp_scope_set(function, symbol, machine) != 0){ return 1; }
     if (micolisp_decrease(symbol, machine) != 0){ return 1; }
@@ -2477,7 +2477,7 @@ static int setup_builtin_function (micolisp_machine *machine){
   {
     micolisp_symbol *symbol = micolisp_allocate_symbol0("*", machine);
     if (symbol == NULL){ return 1; }
-    micolisp_c_function *function = micolisp_allocate_c_function(MLISP_FUNCTION, __micolisp_mul, machine);
+    micolisp_c_function *function = micolisp_allocate_c_function(MICOLISP_FUNCTION, __micolisp_mul, machine);
     if (function == NULL){ return 1; }
     if (micolisp_scope_set(function, symbol, machine) != 0){ return 1; }
     if (micolisp_decrease(symbol, machine) != 0){ return 1; }
@@ -2487,7 +2487,7 @@ static int setup_builtin_function (micolisp_machine *machine){
   {
     micolisp_symbol *symbol = micolisp_allocate_symbol0("/", machine);
     if (symbol == NULL){ return 1; }
-    micolisp_c_function *function = micolisp_allocate_c_function(MLISP_FUNCTION, __micolisp_div, machine);
+    micolisp_c_function *function = micolisp_allocate_c_function(MICOLISP_FUNCTION, __micolisp_div, machine);
     if (function == NULL){ return 1; }
     if (micolisp_scope_set(function, symbol, machine) != 0){ return 1; }
     if (micolisp_decrease(symbol, machine) != 0){ return 1; }
@@ -2497,7 +2497,7 @@ static int setup_builtin_function (micolisp_machine *machine){
   {
     micolisp_symbol *symbol = micolisp_allocate_symbol0("%", machine);
     if (symbol == NULL){ return 1; }
-    micolisp_c_function *function = micolisp_allocate_c_function(MLISP_FUNCTION, __micolisp_mod, machine);
+    micolisp_c_function *function = micolisp_allocate_c_function(MICOLISP_FUNCTION, __micolisp_mod, machine);
     if (function == NULL){ return 1; }
     if (micolisp_scope_set(function, symbol, machine) != 0){ return 1; }
     if (micolisp_decrease(symbol, machine) != 0){ return 1; }
@@ -2507,7 +2507,7 @@ static int setup_builtin_function (micolisp_machine *machine){
   {
     micolisp_symbol *symbol = micolisp_allocate_symbol0("<<", machine);
     if (symbol == NULL){ return 1; }
-    micolisp_c_function *function = micolisp_allocate_c_function(MLISP_FUNCTION, __micolisp_lshift, machine);
+    micolisp_c_function *function = micolisp_allocate_c_function(MICOLISP_FUNCTION, __micolisp_lshift, machine);
     if (function == NULL){ return 1; }
     if (micolisp_scope_set(function, symbol, machine) != 0){ return 1; }
     if (micolisp_decrease(symbol, machine) != 0){ return 1; }
@@ -2517,7 +2517,7 @@ static int setup_builtin_function (micolisp_machine *machine){
   {
     micolisp_symbol *symbol = micolisp_allocate_symbol0(">>", machine);
     if (symbol == NULL){ return 1; }
-    micolisp_c_function *function = micolisp_allocate_c_function(MLISP_FUNCTION, __micolisp_rshift, machine);
+    micolisp_c_function *function = micolisp_allocate_c_function(MICOLISP_FUNCTION, __micolisp_rshift, machine);
     if (function == NULL){ return 1; }
     if (micolisp_scope_set(function, symbol, machine) != 0){ return 1; }
     if (micolisp_decrease(symbol, machine) != 0){ return 1; }
@@ -2527,7 +2527,7 @@ static int setup_builtin_function (micolisp_machine *machine){
   {
     micolisp_symbol *symbol = micolisp_allocate_symbol0(">>>", machine);
     if (symbol == NULL){ return 1; }
-    micolisp_c_function *function = micolisp_allocate_c_function(MLISP_FUNCTION, __micolisp_log_rshift, machine);
+    micolisp_c_function *function = micolisp_allocate_c_function(MICOLISP_FUNCTION, __micolisp_log_rshift, machine);
     if (function == NULL){ return 1; }
     if (micolisp_scope_set(function, symbol, machine) != 0){ return 1; }
     if (micolisp_decrease(symbol, machine) != 0){ return 1; }
@@ -2537,7 +2537,7 @@ static int setup_builtin_function (micolisp_machine *machine){
   {
     micolisp_symbol *symbol = micolisp_allocate_symbol0("~", machine);
     if (symbol == NULL){ return 1; }
-    micolisp_c_function *function = micolisp_allocate_c_function(MLISP_FUNCTION, __micolisp_log_not, machine);
+    micolisp_c_function *function = micolisp_allocate_c_function(MICOLISP_FUNCTION, __micolisp_log_not, machine);
     if (function == NULL){ return 1; }
     if (micolisp_scope_set(function, symbol, machine) != 0){ return 1; }
     if (micolisp_decrease(symbol, machine) != 0){ return 1; }
@@ -2547,7 +2547,7 @@ static int setup_builtin_function (micolisp_machine *machine){
   {
     micolisp_symbol *symbol = micolisp_allocate_symbol0("&", machine);
     if (symbol == NULL){ return 1; }
-    micolisp_c_function *function = micolisp_allocate_c_function(MLISP_FUNCTION, __micolisp_log_and, machine);
+    micolisp_c_function *function = micolisp_allocate_c_function(MICOLISP_FUNCTION, __micolisp_log_and, machine);
     if (function == NULL){ return 1; }
     if (micolisp_scope_set(function, symbol, machine) != 0){ return 1; }
     if (micolisp_decrease(symbol, machine) != 0){ return 1; }
@@ -2557,7 +2557,7 @@ static int setup_builtin_function (micolisp_machine *machine){
   {
     micolisp_symbol *symbol = micolisp_allocate_symbol0("|", machine);
     if (symbol == NULL){ return 1; }
-    micolisp_c_function *function = micolisp_allocate_c_function(MLISP_FUNCTION, __micolisp_log_or, machine);
+    micolisp_c_function *function = micolisp_allocate_c_function(MICOLISP_FUNCTION, __micolisp_log_or, machine);
     if (function == NULL){ return 1; }
     if (micolisp_scope_set(function, symbol, machine) != 0){ return 1; }
     if (micolisp_decrease(symbol, machine) != 0){ return 1; }
@@ -2567,7 +2567,7 @@ static int setup_builtin_function (micolisp_machine *machine){
   {
     micolisp_symbol *symbol = micolisp_allocate_symbol0("^", machine);
     if (symbol == NULL){ return 1; }
-    micolisp_c_function *function = micolisp_allocate_c_function(MLISP_FUNCTION, __micolisp_log_xor, machine);
+    micolisp_c_function *function = micolisp_allocate_c_function(MICOLISP_FUNCTION, __micolisp_log_xor, machine);
     if (function == NULL){ return 1; }
     if (micolisp_scope_set(function, symbol, machine) != 0){ return 1; }
     if (micolisp_decrease(symbol, machine) != 0){ return 1; }
@@ -2577,7 +2577,7 @@ static int setup_builtin_function (micolisp_machine *machine){
   {
     micolisp_symbol *symbol = micolisp_allocate_symbol0("floor", machine);
     if (symbol == NULL){ return 1; }
-    micolisp_c_function *function = micolisp_allocate_c_function(MLISP_FUNCTION, __micolisp_floor, machine);
+    micolisp_c_function *function = micolisp_allocate_c_function(MICOLISP_FUNCTION, __micolisp_floor, machine);
     if (function == NULL){ return 1; }
     if (micolisp_scope_set(function, symbol, machine) != 0){ return 1; }
     if (micolisp_decrease(symbol, machine) != 0){ return 1; }
@@ -2587,7 +2587,7 @@ static int setup_builtin_function (micolisp_machine *machine){
   {
     micolisp_symbol *symbol = micolisp_allocate_symbol0("ceil", machine);
     if (symbol == NULL){ return 1; }
-    micolisp_c_function *function = micolisp_allocate_c_function(MLISP_FUNCTION, __micolisp_ceil, machine);
+    micolisp_c_function *function = micolisp_allocate_c_function(MICOLISP_FUNCTION, __micolisp_ceil, machine);
     if (function == NULL){ return 1; }
     if (micolisp_scope_set(function, symbol, machine) != 0){ return 1; }
     if (micolisp_decrease(symbol, machine) != 0){ return 1; }
@@ -2597,7 +2597,7 @@ static int setup_builtin_function (micolisp_machine *machine){
   {
     micolisp_symbol *symbol = micolisp_allocate_symbol0("round", machine);
     if (symbol == NULL){ return 1; }
-    micolisp_c_function *function = micolisp_allocate_c_function(MLISP_FUNCTION, __micolisp_round, machine);
+    micolisp_c_function *function = micolisp_allocate_c_function(MICOLISP_FUNCTION, __micolisp_round, machine);
     if (function == NULL){ return 1; }
     if (micolisp_scope_set(function, symbol, machine) != 0){ return 1; }
     if (micolisp_decrease(symbol, machine) != 0){ return 1; }
@@ -2607,7 +2607,7 @@ static int setup_builtin_function (micolisp_machine *machine){
   {
     micolisp_symbol *symbol = micolisp_allocate_symbol0("==", machine);
     if (symbol == NULL){ return 1; }
-    micolisp_c_function *function = micolisp_allocate_c_function(MLISP_FUNCTION, __micolisp_equal, machine);
+    micolisp_c_function *function = micolisp_allocate_c_function(MICOLISP_FUNCTION, __micolisp_equal, machine);
     if (function == NULL){ return 1; }
     if (micolisp_scope_set(function, symbol, machine) != 0){ return 1; }
     if (micolisp_decrease(symbol, machine) != 0){ return 1; }
@@ -2617,7 +2617,7 @@ static int setup_builtin_function (micolisp_machine *machine){
   {
     micolisp_symbol *symbol = micolisp_allocate_symbol0("!=", machine);
     if (symbol == NULL){ return 1; }
-    micolisp_c_function *function = micolisp_allocate_c_function(MLISP_FUNCTION, __micolisp_unequal, machine);
+    micolisp_c_function *function = micolisp_allocate_c_function(MICOLISP_FUNCTION, __micolisp_unequal, machine);
     if (function == NULL){ return 1; }
     if (micolisp_scope_set(function, symbol, machine) != 0){ return 1; }
     if (micolisp_decrease(symbol, machine) != 0){ return 1; }
@@ -2627,7 +2627,7 @@ static int setup_builtin_function (micolisp_machine *machine){
   {
     micolisp_symbol *symbol = micolisp_allocate_symbol0("<", machine);
     if (symbol == NULL){ return 1; }
-    micolisp_c_function *function = micolisp_allocate_c_function(MLISP_FUNCTION, __micolisp_less, machine);
+    micolisp_c_function *function = micolisp_allocate_c_function(MICOLISP_FUNCTION, __micolisp_less, machine);
     if (function == NULL){ return 1; }
     if (micolisp_scope_set(function, symbol, machine) != 0){ return 1; }
     if (micolisp_decrease(symbol, machine) != 0){ return 1; }
@@ -2637,7 +2637,7 @@ static int setup_builtin_function (micolisp_machine *machine){
   {
     micolisp_symbol *symbol = micolisp_allocate_symbol0("<=", machine);
     if (symbol == NULL){ return 1; }
-    micolisp_c_function *function = micolisp_allocate_c_function(MLISP_FUNCTION, __micolisp_less_or_equal, machine);
+    micolisp_c_function *function = micolisp_allocate_c_function(MICOLISP_FUNCTION, __micolisp_less_or_equal, machine);
     if (function == NULL){ return 1; }
     if (micolisp_scope_set(function, symbol, machine) != 0){ return 1; }
     if (micolisp_decrease(symbol, machine) != 0){ return 1; }
@@ -2647,7 +2647,7 @@ static int setup_builtin_function (micolisp_machine *machine){
   {
     micolisp_symbol *symbol = micolisp_allocate_symbol0(">", machine);
     if (symbol == NULL){ return 1; }
-    micolisp_c_function *function = micolisp_allocate_c_function(MLISP_FUNCTION, __micolisp_great, machine);
+    micolisp_c_function *function = micolisp_allocate_c_function(MICOLISP_FUNCTION, __micolisp_great, machine);
     if (function == NULL){ return 1; }
     if (micolisp_scope_set(function, symbol, machine) != 0){ return 1; }
     if (micolisp_decrease(symbol, machine) != 0){ return 1; }
@@ -2657,7 +2657,7 @@ static int setup_builtin_function (micolisp_machine *machine){
   {
     micolisp_symbol *symbol = micolisp_allocate_symbol0(">=", machine);
     if (symbol == NULL){ return 1; }
-    micolisp_c_function *function = micolisp_allocate_c_function(MLISP_FUNCTION, __micolisp_great_or_equal, machine);
+    micolisp_c_function *function = micolisp_allocate_c_function(MICOLISP_FUNCTION, __micolisp_great_or_equal, machine);
     if (function == NULL){ return 1; }
     if (micolisp_scope_set(function, symbol, machine) != 0){ return 1; }
     if (micolisp_decrease(symbol, machine) != 0){ return 1; }
@@ -2667,7 +2667,7 @@ static int setup_builtin_function (micolisp_machine *machine){
   {
     micolisp_symbol *symbol = micolisp_allocate_symbol0("numberp", machine);
     if (symbol == NULL){ return 1; }
-    micolisp_c_function *function = micolisp_allocate_c_function(MLISP_FUNCTION, __micolisp_numberp, machine);
+    micolisp_c_function *function = micolisp_allocate_c_function(MICOLISP_FUNCTION, __micolisp_numberp, machine);
     if (function == NULL){ return 1; }
     if (micolisp_scope_set(function, symbol, machine) != 0){ return 1; }
     if (micolisp_decrease(symbol, machine) != 0){ return 1; }
@@ -2677,7 +2677,7 @@ static int setup_builtin_function (micolisp_machine *machine){
   {
     micolisp_symbol *symbol = micolisp_allocate_symbol0("symbolp", machine);
     if (symbol == NULL){ return 1; }
-    micolisp_c_function *function = micolisp_allocate_c_function(MLISP_FUNCTION, __micolisp_symbolp, machine);
+    micolisp_c_function *function = micolisp_allocate_c_function(MICOLISP_FUNCTION, __micolisp_symbolp, machine);
     if (function == NULL){ return 1; }
     if (micolisp_scope_set(function, symbol, machine) != 0){ return 1; }
     if (micolisp_decrease(symbol, machine) != 0){ return 1; }
@@ -2687,7 +2687,7 @@ static int setup_builtin_function (micolisp_machine *machine){
   {
     micolisp_symbol *symbol = micolisp_allocate_symbol0("functionp", machine);
     if (symbol == NULL){ return 1; }
-    micolisp_c_function *function = micolisp_allocate_c_function(MLISP_FUNCTION, __micolisp_functionp, machine);
+    micolisp_c_function *function = micolisp_allocate_c_function(MICOLISP_FUNCTION, __micolisp_functionp, machine);
     if (function == NULL){ return 1; }
     if (micolisp_scope_set(function, symbol, machine) != 0){ return 1; }
     if (micolisp_decrease(symbol, machine) != 0){ return 1; }
@@ -2697,7 +2697,7 @@ static int setup_builtin_function (micolisp_machine *machine){
   {
     micolisp_symbol *symbol = micolisp_allocate_symbol0("consp", machine);
     if (symbol == NULL){ return 1; }
-    micolisp_c_function *function = micolisp_allocate_c_function(MLISP_FUNCTION, __micolisp_consp, machine);
+    micolisp_c_function *function = micolisp_allocate_c_function(MICOLISP_FUNCTION, __micolisp_consp, machine);
     if (function == NULL){ return 1; }
     if (micolisp_scope_set(function, symbol, machine) != 0){ return 1; }
     if (micolisp_decrease(symbol, machine) != 0){ return 1; }
@@ -2707,7 +2707,7 @@ static int setup_builtin_function (micolisp_machine *machine){
   {
     micolisp_symbol *symbol = micolisp_allocate_symbol0("listp", machine);
     if (symbol == NULL){ return 1; }
-    micolisp_c_function *function = micolisp_allocate_c_function(MLISP_FUNCTION, __micolisp_listp, machine);
+    micolisp_c_function *function = micolisp_allocate_c_function(MICOLISP_FUNCTION, __micolisp_listp, machine);
     if (function == NULL){ return 1; }
     if (micolisp_scope_set(function, symbol, machine) != 0){ return 1; }
     if (micolisp_decrease(symbol, machine) != 0){ return 1; }
@@ -2717,7 +2717,7 @@ static int setup_builtin_function (micolisp_machine *machine){
   {
     micolisp_symbol *symbol = micolisp_allocate_symbol0("read", machine);
     if (symbol == NULL){ return 1; }
-    micolisp_c_function *function = micolisp_allocate_c_function(MLISP_FUNCTION, __micolisp_read, machine);
+    micolisp_c_function *function = micolisp_allocate_c_function(MICOLISP_FUNCTION, __micolisp_read, machine);
     if (function == NULL){ return 1; }
     if (micolisp_scope_set(function, symbol, machine) != 0){ return 1; }
     if (micolisp_decrease(symbol, machine) != 0){ return 1; }
@@ -2727,7 +2727,7 @@ static int setup_builtin_function (micolisp_machine *machine){
   {
     micolisp_symbol *symbol = micolisp_allocate_symbol0("read-string", machine);
     if (symbol == NULL){ return 1; }
-    micolisp_c_function *function = micolisp_allocate_c_function(MLISP_FUNCTION, __micolisp_read_string, machine);
+    micolisp_c_function *function = micolisp_allocate_c_function(MICOLISP_FUNCTION, __micolisp_read_string, machine);
     if (function == NULL){ return 1; }
     if (micolisp_scope_set(function, symbol, machine) != 0){ return 1; }
     if (micolisp_decrease(symbol, machine) != 0){ return 1; }
@@ -2737,7 +2737,7 @@ static int setup_builtin_function (micolisp_machine *machine){
   {
     micolisp_symbol *symbol = micolisp_allocate_symbol0("read-line", machine);
     if (symbol == NULL){ return 1; }
-    micolisp_c_function *function = micolisp_allocate_c_function(MLISP_FUNCTION, __micolisp_read_line, machine);
+    micolisp_c_function *function = micolisp_allocate_c_function(MICOLISP_FUNCTION, __micolisp_read_line, machine);
     if (function == NULL){ return 1; }
     if (micolisp_scope_set(function, symbol, machine) != 0){ return 1; }
     if (micolisp_decrease(symbol, machine) != 0){ return 1; }
@@ -2747,7 +2747,7 @@ static int setup_builtin_function (micolisp_machine *machine){
   {
     micolisp_symbol *symbol = micolisp_allocate_symbol0("eval", machine);
     if (symbol == NULL){ return 1; }
-    micolisp_c_function *function = micolisp_allocate_c_function(MLISP_FUNCTION, __micolisp_eval, machine);
+    micolisp_c_function *function = micolisp_allocate_c_function(MICOLISP_FUNCTION, __micolisp_eval, machine);
     if (function == NULL){ return 1; }
     if (micolisp_scope_set(function, symbol, machine) != 0){ return 1; }
     if (micolisp_decrease(symbol, machine) != 0){ return 1; }
@@ -2757,7 +2757,7 @@ static int setup_builtin_function (micolisp_machine *machine){
   {
     micolisp_symbol *symbol = micolisp_allocate_symbol0("eval-string", machine);
     if (symbol == NULL){ return 1; }
-    micolisp_c_function *function = micolisp_allocate_c_function(MLISP_FUNCTION, __micolisp_eval_string, machine);
+    micolisp_c_function *function = micolisp_allocate_c_function(MICOLISP_FUNCTION, __micolisp_eval_string, machine);
     if (function == NULL){ return 1; }
     if (micolisp_scope_set(function, symbol, machine) != 0){ return 1; }
     if (micolisp_decrease(symbol, machine) != 0){ return 1; }
@@ -2767,7 +2767,7 @@ static int setup_builtin_function (micolisp_machine *machine){
   {
     micolisp_symbol *symbol = micolisp_allocate_symbol0("print", machine);
     if (symbol == NULL){ return 1; }
-    micolisp_c_function *function = micolisp_allocate_c_function(MLISP_FUNCTION, __micolisp_print, machine);
+    micolisp_c_function *function = micolisp_allocate_c_function(MICOLISP_FUNCTION, __micolisp_print, machine);
     if (function == NULL){ return 1; }
     if (micolisp_scope_set(function, symbol, machine) != 0){ return 1; }
     if (micolisp_decrease(symbol, machine) != 0){ return 1; }
@@ -2777,7 +2777,7 @@ static int setup_builtin_function (micolisp_machine *machine){
   {
     micolisp_symbol *symbol = micolisp_allocate_symbol0("println", machine);
     if (symbol == NULL){ return 1; }
-    micolisp_c_function *function = micolisp_allocate_c_function(MLISP_FUNCTION, __micolisp_println, machine);
+    micolisp_c_function *function = micolisp_allocate_c_function(MICOLISP_FUNCTION, __micolisp_println, machine);
     if (function == NULL){ return 1; }
     if (micolisp_scope_set(function, symbol, machine) != 0){ return 1; }
     if (micolisp_decrease(symbol, machine) != 0){ return 1; }
@@ -2787,7 +2787,7 @@ static int setup_builtin_function (micolisp_machine *machine){
   {
     micolisp_symbol *symbol = micolisp_allocate_symbol0("write", machine);
     if (symbol == NULL){ return 1; }
-    micolisp_c_function *function = micolisp_allocate_c_function(MLISP_FUNCTION, __micolisp_write, machine);
+    micolisp_c_function *function = micolisp_allocate_c_function(MICOLISP_FUNCTION, __micolisp_write, machine);
     if (function == NULL){ return 1; }
     if (micolisp_scope_set(function, symbol, machine) != 0){ return 1; }
     if (micolisp_decrease(symbol, machine) != 0){ return 1; }
@@ -2797,7 +2797,7 @@ static int setup_builtin_function (micolisp_machine *machine){
   {
     micolisp_symbol *symbol = micolisp_allocate_symbol0("writeln", machine);
     if (symbol == NULL){ return 1; }
-    micolisp_c_function *function = micolisp_allocate_c_function(MLISP_FUNCTION, __micolisp_writeln, machine);
+    micolisp_c_function *function = micolisp_allocate_c_function(MICOLISP_FUNCTION, __micolisp_writeln, machine);
     if (function == NULL){ return 1; }
     if (micolisp_scope_set(function, symbol, machine) != 0){ return 1; }
     if (micolisp_decrease(symbol, machine) != 0){ return 1; }
@@ -2807,7 +2807,7 @@ static int setup_builtin_function (micolisp_machine *machine){
   {
     micolisp_symbol *symbol = micolisp_allocate_symbol0("error", machine);
     if (symbol == NULL){ return 1; }
-    micolisp_c_function *function = micolisp_allocate_c_function(MLISP_FUNCTION, __micolisp_error, machine);
+    micolisp_c_function *function = micolisp_allocate_c_function(MICOLISP_FUNCTION, __micolisp_error, machine);
     if (function == NULL){ return 1; }
     if (micolisp_scope_set(function, symbol, machine) != 0){ return 1; }
     if (micolisp_decrease(symbol, machine) != 0){ return 1; }

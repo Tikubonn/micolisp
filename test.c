@@ -57,13 +57,13 @@ static void test_micolisp_allocate (){
   }
   // allocate c function.
   {
-    micolisp_c_function *function = micolisp_allocate_c_function(MLISP_FUNCTION, NULL, &machine);
+    micolisp_c_function *function = micolisp_allocate_c_function(MICOLISP_FUNCTION, NULL, &machine);
     TEST(function != NULL);
     TEST(micolisp_decrease(function, &machine) == 0);
   }
   // allocate user function.
   {
-    micolisp_user_function *function = micolisp_allocate_user_function(MLISP_FUNCTION, NULL, NULL, &machine);
+    micolisp_user_function *function = micolisp_allocate_user_function(MICOLISP_FUNCTION, NULL, NULL, &machine);
     TEST(function != NULL);
     TEST(micolisp_decrease(function, &machine) == 0);
   }
@@ -93,7 +93,7 @@ static void test_micolisp_scope_set (){
     // set function.
     {
       micolisp_symbol *symbol = micolisp_allocate_symbol0("a", &machine);
-      micolisp_c_function *function = micolisp_allocate_c_function(MLISP_FUNCTION, NULL, &machine);
+      micolisp_c_function *function = micolisp_allocate_c_function(MICOLISP_FUNCTION, NULL, &machine);
       TEST(symbol != NULL);
       TEST(function != NULL);
       TEST(micolisp_scope_set(function, symbol, &machine) == 0);
@@ -103,7 +103,7 @@ static void test_micolisp_scope_set (){
     // set function.
     {
       micolisp_symbol *symbol = micolisp_allocate_symbol0("b", &machine);
-      micolisp_c_function *function = micolisp_allocate_c_function(MLISP_FUNCTION, NULL, &machine);
+      micolisp_c_function *function = micolisp_allocate_c_function(MICOLISP_FUNCTION, NULL, &machine);
       TEST(symbol != NULL);
       TEST(function != NULL);
       TEST(micolisp_scope_set(function, symbol, &machine) == 0);
@@ -113,7 +113,7 @@ static void test_micolisp_scope_set (){
     // set function.
     {
       micolisp_symbol *symbol = micolisp_allocate_symbol0("c", &machine);
-      micolisp_c_function *function = micolisp_allocate_c_function(MLISP_FUNCTION, NULL, &machine);
+      micolisp_c_function *function = micolisp_allocate_c_function(MICOLISP_FUNCTION, NULL, &machine);
       TEST(symbol != NULL);
       TEST(function != NULL);
       TEST(micolisp_scope_set(function, symbol, &machine) == 0);
@@ -161,14 +161,14 @@ static void test_micolisp_scope_set (){
     // set function.
     {
       micolisp_symbol *syma = micolisp_allocate_symbol0("a", &machine);
-      micolisp_c_function *functiona = micolisp_allocate_c_function(MLISP_FUNCTION, NULL, &machine);
+      micolisp_c_function *functiona = micolisp_allocate_c_function(MICOLISP_FUNCTION, NULL, &machine);
       TEST(syma != NULL);
       TEST(functiona != NULL);
       TEST(micolisp_scope_set(functiona, syma, &machine) == 0);
       TEST(micolisp_decrease(syma, &machine) == 0);
       TEST(micolisp_decrease(functiona, &machine) == 0);
       micolisp_symbol *symb = micolisp_allocate_symbol0("b", &machine);
-      micolisp_c_function *functionb = micolisp_allocate_c_function(MLISP_FUNCTION, NULL, &machine);
+      micolisp_c_function *functionb = micolisp_allocate_c_function(MICOLISP_FUNCTION, NULL, &machine);
       TEST(symb != NULL);
       TEST(functionb != NULL);
       TEST((void*)symb - (void*)syma == sizeof(micolisp_symbol));
@@ -176,7 +176,7 @@ static void test_micolisp_scope_set (){
       TEST(micolisp_decrease(symb, &machine) == 0);
       TEST(micolisp_decrease(functionb, &machine) == 0);
       micolisp_symbol *symc = micolisp_allocate_symbol0("c", &machine);
-      micolisp_c_function *functionc = micolisp_allocate_c_function(MLISP_FUNCTION, NULL, &machine);
+      micolisp_c_function *functionc = micolisp_allocate_c_function(MICOLISP_FUNCTION, NULL, &machine);
       TEST(symc != NULL);
       TEST(functionc != NULL);
       TEST((void*)symc - (void*)symb == sizeof(micolisp_symbol));
@@ -233,15 +233,15 @@ static void test_micolisp_read (){
     TEST(file != NULL);
     void *value;
     // read t. 
-    TEST(micolisp_read(file, &machine, &value) == MLISP_READ_SUCCESS);
-    TEST(value == MLISP_T);
+    TEST(micolisp_read(file, &machine, &value) == MICOLISP_READ_SUCCESS);
+    TEST(value == MICOLISP_T);
     TEST(micolisp_decrease(value, &machine) == 0);
     // read nil.
-    TEST(micolisp_read(file, &machine, &value) == MLISP_READ_SUCCESS);
-    TEST(value == MLISP_NIL);
+    TEST(micolisp_read(file, &machine, &value) == MICOLISP_READ_SUCCESS);
+    TEST(value == MICOLISP_NIL);
     TEST(micolisp_decrease(value, &machine) == 0);
     // read eof.
-    TEST(micolisp_read(file, &machine, &value) == MLISP_READ_EOF);
+    TEST(micolisp_read(file, &machine, &value) == MICOLISP_READ_EOF);
     TEST(fclose(file) == 0);
   }
   // read from test/number.lisp 
@@ -250,27 +250,27 @@ static void test_micolisp_read (){
     TEST(file != NULL);
     void *value;
     // read 1 
-    TEST(micolisp_read(file, &machine, &value) == MLISP_READ_SUCCESS);
-    TEST(micolisp_typep(MLISP_NUMBER, value, &machine) == true);
+    TEST(micolisp_read(file, &machine, &value) == MICOLISP_READ_SUCCESS);
+    TEST(micolisp_typep(MICOLISP_NUMBER, value, &machine) == true);
     TEST(*(micolisp_number*)value == 1.0);
     TEST(micolisp_decrease(value, &machine) == 0);
     // read 2.5
-    TEST(micolisp_read(file, &machine, &value) == MLISP_READ_SUCCESS);
-    TEST(micolisp_typep(MLISP_NUMBER, value, &machine) == true);
+    TEST(micolisp_read(file, &machine, &value) == MICOLISP_READ_SUCCESS);
+    TEST(micolisp_typep(MICOLISP_NUMBER, value, &machine) == true);
     TEST(*(micolisp_number*)value == 2.5);
     TEST(micolisp_decrease(value, &machine) == 0);
     // read -3
-    TEST(micolisp_read(file, &machine, &value) == MLISP_READ_SUCCESS);
-    TEST(micolisp_typep(MLISP_NUMBER, value, &machine) == true);
+    TEST(micolisp_read(file, &machine, &value) == MICOLISP_READ_SUCCESS);
+    TEST(micolisp_typep(MICOLISP_NUMBER, value, &machine) == true);
     TEST(*(micolisp_number*)value == -3.0);
     TEST(micolisp_decrease(value, &machine) == 0);
     // read -4.5
-    TEST(micolisp_read(file, &machine, &value) == MLISP_READ_SUCCESS);
-    TEST(micolisp_typep(MLISP_NUMBER, value, &machine) == true);
+    TEST(micolisp_read(file, &machine, &value) == MICOLISP_READ_SUCCESS);
+    TEST(micolisp_typep(MICOLISP_NUMBER, value, &machine) == true);
     TEST(*(micolisp_number*)value == -4.5);
     TEST(micolisp_decrease(value, &machine) == 0);
     // read eof.
-    TEST(micolisp_read(file, &machine, &value) == MLISP_READ_EOF);
+    TEST(micolisp_read(file, &machine, &value) == MICOLISP_READ_EOF);
     TEST(fclose(file) == 0);
   }
   // read from test/symbol.lisp
@@ -279,47 +279,47 @@ static void test_micolisp_read (){
     TEST(file != NULL);
     void *value;
     // must be abc.
-    TEST(micolisp_read(file, &machine, &value) == MLISP_READ_SUCCESS);
-    TEST(micolisp_typep(MLISP_SYMBOL, value, &machine) == true);
+    TEST(micolisp_read(file, &machine, &value) == MICOLISP_READ_SUCCESS);
+    TEST(micolisp_typep(MICOLISP_SYMBOL, value, &machine) == true);
     micolisp_symbol *symabc = micolisp_allocate_symbol0("abc", &machine);
     TEST(symabc != NULL);
     TEST(symabc == value);
     TEST(micolisp_decrease(value, &machine) == 0);
     TEST(micolisp_decrease(symabc, &machine) == 0);
     // must be def.
-    TEST(micolisp_read(file, &machine, &value) == MLISP_READ_SUCCESS);
-    TEST(micolisp_typep(MLISP_SYMBOL, value, &machine) == true);
+    TEST(micolisp_read(file, &machine, &value) == MICOLISP_READ_SUCCESS);
+    TEST(micolisp_typep(MICOLISP_SYMBOL, value, &machine) == true);
     micolisp_symbol *symdef = micolisp_allocate_symbol0("def", &machine);
     TEST(symdef != NULL);
     TEST(symdef == value);
     TEST(micolisp_decrease(value, &machine) == 0);
     TEST(micolisp_decrease(symdef, &machine) == 0);
     // must be ghi.
-    TEST(micolisp_read(file, &machine, &value) == MLISP_READ_SUCCESS);
-    TEST(micolisp_typep(MLISP_SYMBOL, value, &machine) == true);
+    TEST(micolisp_read(file, &machine, &value) == MICOLISP_READ_SUCCESS);
+    TEST(micolisp_typep(MICOLISP_SYMBOL, value, &machine) == true);
     micolisp_symbol *symghi = micolisp_allocate_symbol0("ghi", &machine);
     TEST(symghi != NULL);
     TEST(symghi == value);
     TEST(micolisp_decrease(value, &machine) == 0);
     TEST(micolisp_decrease(symghi, &machine) == 0);
     // must be +.
-    TEST(micolisp_read(file, &machine, &value) == MLISP_READ_SUCCESS);
-    TEST(micolisp_typep(MLISP_SYMBOL, value, &machine) == true);
+    TEST(micolisp_read(file, &machine, &value) == MICOLISP_READ_SUCCESS);
+    TEST(micolisp_typep(MICOLISP_SYMBOL, value, &machine) == true);
     micolisp_symbol *symplus = micolisp_allocate_symbol0("+", &machine);
     TEST(symplus != NULL);
     TEST(symplus == value);
     TEST(micolisp_decrease(value, &machine) == 0);
     TEST(micolisp_decrease(symplus, &machine) == 0);
     // must be -.
-    TEST(micolisp_read(file, &machine, &value) == MLISP_READ_SUCCESS);
-    TEST(micolisp_typep(MLISP_SYMBOL, value, &machine) == true);
+    TEST(micolisp_read(file, &machine, &value) == MICOLISP_READ_SUCCESS);
+    TEST(micolisp_typep(MICOLISP_SYMBOL, value, &machine) == true);
     micolisp_symbol *symminus = micolisp_allocate_symbol0("-", &machine);
     TEST(symminus != NULL);
     TEST(symminus == value);
     TEST(micolisp_decrease(value, &machine) == 0);
     TEST(micolisp_decrease(symminus, &machine) == 0);
     // read eof.
-    TEST(micolisp_read(file, &machine, &value) == MLISP_READ_EOF);
+    TEST(micolisp_read(file, &machine, &value) == MICOLISP_READ_EOF);
     // close file.
     TEST(fclose(file) == 0);
   }
@@ -330,18 +330,18 @@ static void test_micolisp_read (){
     // must be (1 2 3)
     {
       void *value;
-      TEST(micolisp_read(file, &machine, &value) == MLISP_READ_SUCCESS);
-      TEST(micolisp_typep(MLISP_CONS, value, &machine) == true);
+      TEST(micolisp_read(file, &machine, &value) == MICOLISP_READ_SUCCESS);
+      TEST(micolisp_typep(MICOLISP_CONS, value, &machine) == true);
       micolisp_cons *cons1 = value;
-      TEST(micolisp_typep(MLISP_NUMBER, cons1->car, &machine) == true);
-      TEST(micolisp_typep(MLISP_CONS, cons1->cdr, &machine) == true);
+      TEST(micolisp_typep(MICOLISP_NUMBER, cons1->car, &machine) == true);
+      TEST(micolisp_typep(MICOLISP_CONS, cons1->cdr, &machine) == true);
       TEST(*(micolisp_number*)(cons1->car) == 1.0);
       micolisp_cons *cons2 = cons1->cdr;
-      TEST(micolisp_typep(MLISP_NUMBER, cons2->car, &machine) == true);
-      TEST(micolisp_typep(MLISP_CONS, cons2->cdr, &machine) == true);
+      TEST(micolisp_typep(MICOLISP_NUMBER, cons2->car, &machine) == true);
+      TEST(micolisp_typep(MICOLISP_CONS, cons2->cdr, &machine) == true);
       TEST(*(micolisp_number*)(cons2->car) == 2.0);
       micolisp_cons *cons3 = cons2->cdr;
-      TEST(micolisp_typep(MLISP_NUMBER, cons3->car, &machine) == true);
+      TEST(micolisp_typep(MICOLISP_NUMBER, cons3->car, &machine) == true);
       TEST(cons3->cdr == NULL);
       TEST(*(micolisp_number*)(cons3->car) == 3.0);
       TEST(micolisp_decrease(value, &machine) == 0);
@@ -350,29 +350,29 @@ static void test_micolisp_read (){
     {
       // (1 (2 (3)))
       void *value;
-      TEST(micolisp_read(file, &machine, &value) == MLISP_READ_SUCCESS);
-      TEST(micolisp_typep(MLISP_CONS, value, &machine) == true);
+      TEST(micolisp_read(file, &machine, &value) == MICOLISP_READ_SUCCESS);
+      TEST(micolisp_typep(MICOLISP_CONS, value, &machine) == true);
       // (1 (2 (3)))
       micolisp_cons *cons1 = value;
-      TEST(micolisp_typep(MLISP_NUMBER, cons1->car, &machine) == true);
-      TEST(micolisp_typep(MLISP_CONS, cons1->cdr, &machine) == true);
+      TEST(micolisp_typep(MICOLISP_NUMBER, cons1->car, &machine) == true);
+      TEST(micolisp_typep(MICOLISP_CONS, cons1->cdr, &machine) == true);
       TEST(*(micolisp_number*)(cons1->car) == 1.0);
       // (2 (3))
       micolisp_cons *cons2 = cons1->cdr;
-      TEST(micolisp_typep(MLISP_CONS, cons2->car, &machine) == true);
+      TEST(micolisp_typep(MICOLISP_CONS, cons2->car, &machine) == true);
       TEST(cons2->cdr == NULL);
       // (2 (3))
       micolisp_cons *cons21 = cons2->car;
-      TEST(micolisp_typep(MLISP_NUMBER, cons21->car, &machine) == true);
-      TEST(micolisp_typep(MLISP_CONS, cons21->cdr, &machine) == true);
+      TEST(micolisp_typep(MICOLISP_NUMBER, cons21->car, &machine) == true);
+      TEST(micolisp_typep(MICOLISP_CONS, cons21->cdr, &machine) == true);
       TEST(*(micolisp_number*)(cons21->car) == 2.0);
       // (3)
       micolisp_cons *cons22 = cons21->cdr;
-      TEST(micolisp_typep(MLISP_CONS, cons22->car, &machine) == true);
+      TEST(micolisp_typep(MICOLISP_CONS, cons22->car, &machine) == true);
       TEST(cons22->cdr == NULL);
       // (3)
       micolisp_cons *cons221 = cons22->car;
-      TEST(micolisp_typep(MLISP_NUMBER, cons221->car, &machine) == true);
+      TEST(micolisp_typep(MICOLISP_NUMBER, cons221->car, &machine) == true);
       TEST(cons221->cdr == NULL);
       TEST(*(micolisp_number*)(cons221->car) == 3.0);
     }
@@ -380,17 +380,17 @@ static void test_micolisp_read (){
     {
       // (1 2 . 3)
       void *value;
-      TEST(micolisp_read(file, &machine, &value) == MLISP_READ_SUCCESS);
-      TEST(micolisp_typep(MLISP_CONS, value, &machine) == true);
+      TEST(micolisp_read(file, &machine, &value) == MICOLISP_READ_SUCCESS);
+      TEST(micolisp_typep(MICOLISP_CONS, value, &machine) == true);
       // (1 2 . 3)
       micolisp_cons *cons1 = value;
-      TEST(micolisp_typep(MLISP_NUMBER, cons1->car, &machine) == true);
-      TEST(micolisp_typep(MLISP_CONS, cons1->cdr, &machine) == true);
+      TEST(micolisp_typep(MICOLISP_NUMBER, cons1->car, &machine) == true);
+      TEST(micolisp_typep(MICOLISP_CONS, cons1->cdr, &machine) == true);
       TEST(*(micolisp_number*)(cons1->car) == 1.0);
       // (2 . 3)
       micolisp_cons *cons2 = cons1->cdr;
-      TEST(micolisp_typep(MLISP_NUMBER, cons2->car, &machine) == true);
-      TEST(micolisp_typep(MLISP_NUMBER, cons2->cdr, &machine) == true);
+      TEST(micolisp_typep(MICOLISP_NUMBER, cons2->car, &machine) == true);
+      TEST(micolisp_typep(MICOLISP_NUMBER, cons2->cdr, &machine) == true);
       TEST(*(micolisp_number*)(cons2->car) == 2.0);
       TEST(*(micolisp_number*)(cons2->cdr) == 3.0);
       TEST(micolisp_decrease(value, &machine) == 0);
@@ -399,28 +399,28 @@ static void test_micolisp_read (){
     {
       // (1 (2 . 3))
       void *value;
-      TEST(micolisp_read(file, &machine, &value) == MLISP_READ_SUCCESS);
-      TEST(micolisp_typep(MLISP_CONS, value, &machine) == true);
+      TEST(micolisp_read(file, &machine, &value) == MICOLISP_READ_SUCCESS);
+      TEST(micolisp_typep(MICOLISP_CONS, value, &machine) == true);
       // (1 (2 . 3))
       micolisp_cons *cons1 = value;
-      TEST(micolisp_typep(MLISP_NUMBER, cons1->car, &machine) == true);
-      TEST(micolisp_typep(MLISP_CONS, cons1->cdr, &machine) == true);
+      TEST(micolisp_typep(MICOLISP_NUMBER, cons1->car, &machine) == true);
+      TEST(micolisp_typep(MICOLISP_CONS, cons1->cdr, &machine) == true);
       TEST(*(micolisp_number*)(cons1->car) == 1.0);
       // (2 . 3)
       micolisp_cons *cons2 = cons1->cdr;
-      TEST(micolisp_typep(MLISP_CONS, cons2->car, &machine) == true);
+      TEST(micolisp_typep(MICOLISP_CONS, cons2->car, &machine) == true);
       TEST(cons2->cdr == NULL);
       // (2 . 3)
       micolisp_cons *cons21 = cons2->car;
-      TEST(micolisp_typep(MLISP_NUMBER, cons21->car, &machine) == true);
-      TEST(micolisp_typep(MLISP_NUMBER, cons21->cdr, &machine) == true);
+      TEST(micolisp_typep(MICOLISP_NUMBER, cons21->car, &machine) == true);
+      TEST(micolisp_typep(MICOLISP_NUMBER, cons21->cdr, &machine) == true);
       TEST(*(micolisp_number*)(cons21->car) == 2.0);
       TEST(*(micolisp_number*)(cons21->cdr) == 3.0);
       TEST(micolisp_decrease(value, &machine) == 0);
     }
     // read eof.
     void *value;
-    TEST(micolisp_read(file, &machine, &value) == MLISP_READ_EOF);
+    TEST(micolisp_read(file, &machine, &value) == MICOLISP_READ_EOF);
     // close file.
     TEST(fclose(file) == 0);
   }
@@ -432,28 +432,28 @@ static void test_micolisp_read (){
     {
       // (quote (97 98 99))
       void *value;
-      TEST(micolisp_read(file, &machine, &value) == MLISP_READ_SUCCESS);
-      TEST(micolisp_typep(MLISP_CONS, value, &machine) == true);
+      TEST(micolisp_read(file, &machine, &value) == MICOLISP_READ_SUCCESS);
+      TEST(micolisp_typep(MICOLISP_CONS, value, &machine) == true);
       micolisp_cons *cons1 = value;
-      TEST(micolisp_typep(MLISP_SYMBOL, cons1->car, &machine) == true);
-      TEST(micolisp_typep(MLISP_CONS, cons1->cdr, &machine) == true);
+      TEST(micolisp_typep(MICOLISP_SYMBOL, cons1->car, &machine) == true);
+      TEST(micolisp_typep(MICOLISP_CONS, cons1->cdr, &machine) == true);
       // ((97 98 99))
       micolisp_cons *cons2 = cons1->cdr;
-      TEST(micolisp_typep(MLISP_CONS, cons2->car, &machine) == true);
+      TEST(micolisp_typep(MICOLISP_CONS, cons2->car, &machine) == true);
       TEST(cons2->cdr == NULL);
       // (97 98 99)
       micolisp_cons *cons21 = cons2->car;
-      TEST(micolisp_typep(MLISP_NUMBER, cons21->car, &machine) == true);
-      TEST(micolisp_typep(MLISP_CONS, cons21->cdr, &machine) == true);
+      TEST(micolisp_typep(MICOLISP_NUMBER, cons21->car, &machine) == true);
+      TEST(micolisp_typep(MICOLISP_CONS, cons21->cdr, &machine) == true);
       TEST(*(micolisp_number*)(cons21->car) == 97);
       // (98 99)
       micolisp_cons *cons22 = cons21->cdr;
-      TEST(micolisp_typep(MLISP_NUMBER, cons22->car, &machine) == true);
-      TEST(micolisp_typep(MLISP_CONS, cons22->cdr, &machine) == true);
+      TEST(micolisp_typep(MICOLISP_NUMBER, cons22->car, &machine) == true);
+      TEST(micolisp_typep(MICOLISP_CONS, cons22->cdr, &machine) == true);
       TEST(*(micolisp_number*)(cons22->car) == 98);
       // (99)
       micolisp_cons *cons23 = cons22->cdr;
-      TEST(micolisp_typep(MLISP_NUMBER, cons23->car, &machine) == true);
+      TEST(micolisp_typep(MICOLISP_NUMBER, cons23->car, &machine) == true);
       TEST(cons23->cdr == NULL);
       TEST(*(micolisp_number*)(cons23->car) == 99);
       TEST(micolisp_decrease(value, &machine) == 0);
@@ -462,28 +462,28 @@ static void test_micolisp_read (){
     {
       // (quote (100 101 102))
       void *value;
-      TEST(micolisp_read(file, &machine, &value) == MLISP_READ_SUCCESS);
-      TEST(micolisp_typep(MLISP_CONS, value, &machine) == true);
+      TEST(micolisp_read(file, &machine, &value) == MICOLISP_READ_SUCCESS);
+      TEST(micolisp_typep(MICOLISP_CONS, value, &machine) == true);
       micolisp_cons *cons1 = value;
-      TEST(micolisp_typep(MLISP_SYMBOL, cons1->car, &machine) == true);
-      TEST(micolisp_typep(MLISP_CONS, cons1->cdr, &machine) == true);
+      TEST(micolisp_typep(MICOLISP_SYMBOL, cons1->car, &machine) == true);
+      TEST(micolisp_typep(MICOLISP_CONS, cons1->cdr, &machine) == true);
       // ((100 101 102))
       micolisp_cons *cons2 = cons1->cdr;
-      TEST(micolisp_typep(MLISP_CONS, cons2->car, &machine) == true);
+      TEST(micolisp_typep(MICOLISP_CONS, cons2->car, &machine) == true);
       TEST(cons2->cdr == NULL);
       // (100 101 102)
       micolisp_cons *cons21 = cons2->car;
-      TEST(micolisp_typep(MLISP_NUMBER, cons21->car, &machine) == true);
-      TEST(micolisp_typep(MLISP_CONS, cons21->cdr, &machine) == true);
+      TEST(micolisp_typep(MICOLISP_NUMBER, cons21->car, &machine) == true);
+      TEST(micolisp_typep(MICOLISP_CONS, cons21->cdr, &machine) == true);
       TEST(*(micolisp_number*)(cons21->car) == 100);
       // (101 102)
       micolisp_cons *cons22 = cons21->cdr;
-      TEST(micolisp_typep(MLISP_NUMBER, cons22->car, &machine) == true);
-      TEST(micolisp_typep(MLISP_CONS, cons22->cdr, &machine) == true);
+      TEST(micolisp_typep(MICOLISP_NUMBER, cons22->car, &machine) == true);
+      TEST(micolisp_typep(MICOLISP_CONS, cons22->cdr, &machine) == true);
       TEST(*(micolisp_number*)(cons22->car) == 101);
       // (102)
       micolisp_cons *cons23 = cons22->cdr;
-      TEST(micolisp_typep(MLISP_NUMBER, cons23->car, &machine) == true);
+      TEST(micolisp_typep(MICOLISP_NUMBER, cons23->car, &machine) == true);
       TEST(cons23->cdr == NULL);
       TEST(*(micolisp_number*)(cons23->car) == 102);
       TEST(micolisp_decrease(value, &machine) == 0);
@@ -492,35 +492,35 @@ static void test_micolisp_read (){
     {
       // (quote (103 104 105))
       void *value;
-      TEST(micolisp_read(file, &machine, &value) == MLISP_READ_SUCCESS);
-      TEST(micolisp_typep(MLISP_CONS, value, &machine) == true);
+      TEST(micolisp_read(file, &machine, &value) == MICOLISP_READ_SUCCESS);
+      TEST(micolisp_typep(MICOLISP_CONS, value, &machine) == true);
       micolisp_cons *cons1 = value;
-      TEST(micolisp_typep(MLISP_SYMBOL, cons1->car, &machine) == true);
-      TEST(micolisp_typep(MLISP_CONS, cons1->cdr, &machine) == true);
+      TEST(micolisp_typep(MICOLISP_SYMBOL, cons1->car, &machine) == true);
+      TEST(micolisp_typep(MICOLISP_CONS, cons1->cdr, &machine) == true);
       // ((103 104 105))
       micolisp_cons *cons2 = cons1->cdr;
-      TEST(micolisp_typep(MLISP_CONS, cons2->car, &machine) == true);
+      TEST(micolisp_typep(MICOLISP_CONS, cons2->car, &machine) == true);
       TEST(cons2->cdr == NULL);
       // (103 104 105)
       micolisp_cons *cons21 = cons2->car;
-      TEST(micolisp_typep(MLISP_NUMBER, cons21->car, &machine) == true);
-      TEST(micolisp_typep(MLISP_CONS, cons21->cdr, &machine) == true);
+      TEST(micolisp_typep(MICOLISP_NUMBER, cons21->car, &machine) == true);
+      TEST(micolisp_typep(MICOLISP_CONS, cons21->cdr, &machine) == true);
       TEST(*(micolisp_number*)(cons21->car) == 103);
       // (104 105)
       micolisp_cons *cons22 = cons21->cdr;
-      TEST(micolisp_typep(MLISP_NUMBER, cons22->car, &machine) == true);
-      TEST(micolisp_typep(MLISP_CONS, cons22->cdr, &machine) == true);
+      TEST(micolisp_typep(MICOLISP_NUMBER, cons22->car, &machine) == true);
+      TEST(micolisp_typep(MICOLISP_CONS, cons22->cdr, &machine) == true);
       TEST(*(micolisp_number*)(cons22->car) == 104);
       // (105)
       micolisp_cons *cons23 = cons22->cdr;
-      TEST(micolisp_typep(MLISP_NUMBER, cons23->car, &machine) == true);
+      TEST(micolisp_typep(MICOLISP_NUMBER, cons23->car, &machine) == true);
       TEST(cons23->cdr == NULL);
       TEST(*(micolisp_number*)(cons23->car) == 105);
       TEST(micolisp_decrease(value, &machine) == 0);
     }
     // read eof.
     void *value;
-    TEST(micolisp_read(file, &machine, &value) == MLISP_READ_EOF);
+    TEST(micolisp_read(file, &machine, &value) == MICOLISP_READ_EOF);
     // close file.
     TEST(fclose(file) == 0);
   }
@@ -529,7 +529,7 @@ static void test_micolisp_read (){
     FILE *file = fopen("test/comment.lisp", "r");
     TEST(file != NULL);
     void *value;
-    TEST(micolisp_read(file, &machine, &value) == MLISP_READ_EOF);
+    TEST(micolisp_read(file, &machine, &value) == MICOLISP_READ_EOF);
     TEST(fclose(file) == 0);
   }
   TEST(micolisp_close(&machine) == 0);
@@ -872,7 +872,7 @@ static void test_micolisp_eval (){
     TEST(micolisp_read(file, &machine, &form) == 0);
     void *formevaluated;
     TEST(micolisp_eval(form, &machine, &formevaluated) == 0);
-    TEST(micolisp_typep(MLISP_NUMBER, formevaluated, &machine));
+    TEST(micolisp_typep(MICOLISP_NUMBER, formevaluated, &machine));
     TEST(*(micolisp_number*)formevaluated == 6);
     TEST(fclose(file) == 0);
   }
@@ -884,7 +884,7 @@ static void test_micolisp_eval (){
     TEST(micolisp_read(file, &machine, &form) == 0);
     void *formevaluated;
     TEST(micolisp_eval(form, &machine, &formevaluated) == 0);
-    TEST(micolisp_typep(MLISP_NUMBER, formevaluated, &machine));
+    TEST(micolisp_typep(MICOLISP_NUMBER, formevaluated, &machine));
     TEST(*(micolisp_number*)formevaluated == 6);
     TEST(fclose(file) == 0);
   }

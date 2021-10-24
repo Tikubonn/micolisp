@@ -9,18 +9,18 @@
 #include "hashtable.h"
 #include "cgcmemnode.h"
 
-#define MLISP_NIL NULL
-#define MLISP_T ((void*)~0)
+#define MICOLISP_NIL NULL
+#define MICOLISP_T ((void*)~0)
 
-#define MLISP_SYMBOL_MAX_LENGTH 32
-#define MLISP_ERROR_INFO_MAX_LENGTH 256
+#define MICOLISP_SYMBOL_MAX_LENGTH 32
+#define MICOLISP_ERROR_INFO_MAX_LENGTH 256
 
 struct micolisp_machine;
 
 typedef double micolisp_number;
 
 typedef struct micolisp_symbol {
-  char characters[MLISP_SYMBOL_MAX_LENGTH];
+  char characters[MICOLISP_SYMBOL_MAX_LENGTH];
   size_t length;
   size_t hash;
 } micolisp_symbol;
@@ -31,8 +31,8 @@ typedef struct micolisp_cons {
 } micolisp_cons;
 
 typedef enum micolisp_cons_whence {
-  MLISP_CONS_CAR,
-  MLISP_CONS_CDR,
+  MICOLISP_CONS_CAR,
+  MICOLISP_CONS_CDR,
 } micolisp_cons_whence;
 
 typedef struct micolisp_cons_reference {
@@ -41,9 +41,9 @@ typedef struct micolisp_cons_reference {
 } micolisp_cons_reference;
 
 typedef enum micolisp_function_type {
-  MLISP_FUNCTION,
-  MLISP_SYNTAX,
-  MLISP_MACRO,
+  MICOLISP_FUNCTION,
+  MICOLISP_SYNTAX,
+  MICOLISP_MACRO,
 } micolisp_function_type;
 
 typedef struct micolisp_function { 
@@ -74,16 +74,16 @@ typedef struct micolisp_scope_reference {
 } micolisp_scope_reference;
 
 typedef enum micolisp_memory_type {
-  MLISP_NUMBER,
-  MLISP_SYMBOL,
-  MLISP_CONS,
-  MLISP_CONS_REFERENCE,
-  MLISP_C_FUNCTION,
-  MLISP_USER_FUNCTION,
-  MLISP_SCOPE,
-  MLISP_SCOPE_REFERENCE,
-  MLISP_HASHTABLE_ENTRY,
-  MLISP_HASHSET_ENTRY,
+  MICOLISP_NUMBER,
+  MICOLISP_SYMBOL,
+  MICOLISP_CONS,
+  MICOLISP_CONS_REFERENCE,
+  MICOLISP_C_FUNCTION,
+  MICOLISP_USER_FUNCTION,
+  MICOLISP_SCOPE,
+  MICOLISP_SCOPE_REFERENCE,
+  MICOLISP_HASHTABLE_ENTRY,
+  MICOLISP_HASHSET_ENTRY,
 } micolisp_memory_type;
 
 typedef struct micolisp_memory {
@@ -106,17 +106,17 @@ typedef struct micolisp_machine {
 } micolisp_machine;
 
 typedef enum micolisp_error_type {
-  MLISP_NOERROR = 0,
-  MLISP_ERROR,
-  MLISP_INTERNAL_ERROR,
-  MLISP_TYPE_ERROR,
-  MLISP_VALUE_ERROR,
-  MLISP_SYNTAX_ERROR,
+  MICOLISP_NOERROR = 0,
+  MICOLISP_ERROR,
+  MICOLISP_INTERNAL_ERROR,
+  MICOLISP_TYPE_ERROR,
+  MICOLISP_VALUE_ERROR,
+  MICOLISP_SYNTAX_ERROR,
 } micolisp_error_type;
 
 typedef struct micolisp_error_info { 
   int code;
-  char message[MLISP_ERROR_INFO_MAX_LENGTH];
+  char message[MICOLISP_ERROR_INFO_MAX_LENGTH];
 } micolisp_error_info;
 
 // error info 
@@ -189,11 +189,11 @@ extern int micolisp_println (void*, FILE*, micolisp_machine*);
 
 // read 
 
-#define MLISP_READ_SUCCESS 0 
-#define MLISP_READ_ERROR 1 
-#define MLISP_READ_EOF 2 
-#define MLISP_READ_CLOSE_PAREN 3 
-#define MLISP_READ_DOT 4
+#define MICOLISP_READ_SUCCESS 0 
+#define MICOLISP_READ_ERROR 1 
+#define MICOLISP_READ_EOF 2 
+#define MICOLISP_READ_CLOSE_PAREN 3 
+#define MICOLISP_READ_DOT 4
 
 extern int micolisp_read (FILE*, micolisp_machine*, void**);
 
